@@ -9,7 +9,7 @@
 <style>
   :root{
     --green:#cdeabc; --blue:#bfe4ee; --lilac:#e3def7; --gray:#f3f3f3; --bg:#e8eaeb;
-    --ink:#111; --muted:#8b8b8b; --line:#d9d9d9;
+    --ink:#111; --muted:#8b8b8b; --line:#d9d9d9; --mint:#f5f8be;
   }
   *{box-sizing:border-box}
   body{
@@ -36,16 +36,44 @@
   button.ghost{background:#fff;color:var(--ink)}
   select{font:inherit;font-size:.85rem;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;background:#fff;color:var(--ink)}
 
-  .layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
-  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+  .panel.dash{
+    display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;
+    grid-template-areas:
+      "health heat"
+      "title title"
+      "beat vitals"
+      "spo2 ctrl";
+    align-items:stretch;
+  }
+  .g-health{grid-area:health}.g-heat{grid-area:heat}.g-title{grid-area:title;margin:10px 6px 0}
+  .g-beat{grid-area:beat}.g-vitals{grid-area:vitals}.g-spo2{grid-area:spo2}.g-ctrl{grid-area:ctrl}
+  .g-health>.health-card,.g-heat>.heat-card,.g-beat>.beat-card,.g-spo2>.spo2-card,.g-ctrl>.mini-grid{height:100%}
+  .g-health,.g-heat,.g-beat,.g-spo2,.g-ctrl{display:flex;flex-direction:column;min-width:0}
+  .g-health>*,.g-heat>*,.g-beat>*,.g-spo2>*,.g-ctrl>*{flex:1}
+  .g-vitals{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .g-vitals .status-card{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .g-ctrl .mini-grid{grid-template-columns:1fr;grid-auto-rows:1fr}
+  .g-beat .beat-card{display:flex;flex-direction:column}
+  .g-beat canvas{height:230px;flex:none}
+  .g-beat .legend{margin-top:auto;padding-top:8px;flex-wrap:wrap}
+  .spo2-card{display:flex;flex-direction:column}
+  .spo2-card .bc-big{margin-bottom:14px}
+  .spo2-card .spo2-foot{margin-top:auto;padding-top:14px}
+  .heat-card h3 .sub2{display:block;margin-top:2px}
+  .g-vitals .status-card{justify-content:space-around}
+  .heat-card{display:flex;flex-direction:column}
+  .heat-card .spo2-foot{margin-top:auto;padding-top:12px}
+  @media(max-width:820px){
+    .panel.dash{grid-template-columns:1fr;grid-template-areas:"health" "heat" "title" "beat" "vitals" "spo2" "ctrl"}
+  }
   .panel{background:#fff;border-radius:36px;padding:18px;display:flex;flex-direction:column;gap:14px}
   .title{margin:6px 6px 0;font-size:2rem;font-weight:600;letter-spacing:-.01em}
 
   .icon-circle{width:48px;height:48px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
   .icon-circle svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
-  /* Health (green) */
-  .health-card{background:var(--green);border-radius:28px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:240px}
+  /* Health (mint) */
+  .health-card{background:var(--mint);border-radius:28px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:240px}
   .hc-left{display:flex;flex-direction:column;justify-content:space-between;padding:6px 4px 4px 6px}
   .hc-left h2{font-size:1.7rem;margin:22px 0 4px;font-weight:600}
   .hc-left p{margin:0 0 14px;font-size:.78rem;color:#4f6a45;line-height:1.4}
@@ -88,16 +116,23 @@
   .spo2-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
   .spo2-foot .tag{margin:0;background:#fff}
 
-  /* Heat stroke */
-  .heat-card{background:#fde9c8;border-radius:30px;padding:18px;transition:background .3s}
-  .heat-card.l0{background:#dff0d4}
-  .heat-card.l1{background:#fbe7a6}
-  .heat-card.l2{background:#f9c6a0}
-  .heat-card.l3{background:#f4a3a3}
-  .heat-card.na{background:#ececec}
-  .heat-lv{font-size:2rem;font-weight:600;margin:18px 0 6px;line-height:1.1}
-  .heat-adv{font-size:.86rem;line-height:1.55;color:#333;min-height:2.6em}
-  .heat-why{font-size:.76rem;color:#555;margin-top:10px}
+  /* Heat stroke risk */
+  .heat-card{--hc:#cdeabc;--hd:#3f6b32;background:var(--hc);border-radius:30px;padding:18px;transition:background .4s}
+  .heat-card.l1{--hc:#fbe9a6;--hd:#7a5d00}
+  .heat-card.l2{--hc:#ffc999;--hd:#9a4300}
+  .heat-card.l3{--hc:#ffb3b3;--hd:#a10d0d}
+  .heat-card .bc-big{font-size:2.6rem;margin:16px 0 4px;color:var(--hd)}
+  .heat-card .bc-big small{color:var(--hd)}
+  .heat-card.l3 .bc-big{animation:hblink 1s infinite}
+  @keyframes hblink{50%{opacity:.45}}
+  .heat-meter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+  .heat-meter i{height:8px;border-radius:99px;background:#ffffffb0}
+  .heat-meter i.on{background:var(--hd)}
+  .heat-why{margin:12px 0 0;padding:0;list-style:none;font-size:.82rem;color:#333;line-height:1.7}
+  .heat-why li::before{content:"• ";color:var(--hd)}
+  .heat-advice{margin-top:10px;font-size:.84rem;font-weight:500;color:#222}
+  .heat-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;background:#fff;color:#444}
+  .heat-badge.l1{background:#fbe9a6}.heat-badge.l2{background:#ffc999}.heat-badge.l3{background:#ffb3b3}
 
   .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .controls + .controls{margin-top:14px}
@@ -160,14 +195,11 @@
       <span class="pill"><span class="dot" id="connDot"></span><span id="connText">ยังไม่เชื่อมต่อ</span></span>
       <button id="btnConnect">เชื่อมต่อ Bluetooth</button>
       <button class="alt" id="btnDemo">โหมดสาธิต</button>
-      <button class="ghost" id="btnHot" style="display:none">จำลองภาวะเสี่ยงฮีทสโตรก</button>
     </div>
   </header>
 
-  <div class="layout">
-    <!-- LEFT -->
-    <section class="panel">
-      <div class="health-card">
+  <div class="panel dash">
+    <div class="g-health"><div class="health-card">
         <div class="hc-left">
           <div>
             <div class="icon-circle">
@@ -195,8 +227,41 @@
             <g fill="#222"><circle cx="118" cy="58" r="2.2"/><circle cx="78" cy="120" r="2.2"/><circle cx="112" cy="170" r="2.2"/></g>
           </svg>
         </div>
-      </div>
-
+      </div></div>
+    <div class="g-heat"><div class="heat-card" id="heatCard">
+        <div class="bc-top">
+          <div class="icon-circle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+          </div>
+          <h3>ประเมินฮีทสโตรก <span class="sub2">Heat stroke risk</span></h3>
+          <span class="dots">•••</span>
+        </div>
+        <div class="bc-big"><span id="heatName">รอข้อมูล</span><small id="heatScoreTxt"></small></div>
+        <div class="heat-meter" id="heatMeter"><i></i><i></i><i></i><i></i></div>
+        <ul class="heat-why" id="heatWhy"><li>รอข้อมูลอุณหภูมิและชีพจร</li></ul>
+        <div class="heat-advice" id="heatAdvice"></div>
+        <div class="spo2-foot">
+          <span class="tag" id="heatTag">ไฟ LED: ดับ</span>
+          <span class="sub2">ประเมินจากอุณหภูมิผิว (ต่ำกว่าอุณหภูมิแกนกลาง) · ไม่ใช่เครื่องมือแพทย์</span>
+        </div>
+      </div></div>
+    <h2 class="title g-title">Diagnostics</h2>
+    <div class="g-beat"><div class="beat-card">
+        <div class="bc-top">
+          <div class="icon-circle heart" id="heart">
+            <svg viewBox="0 0 24 24"><path d="M3 12h3l2.5-6 4 12 2.5-8 1.5 2H21"/></svg>
+          </div>
+          <h3>Heartbeat</h3>
+          <span class="dots">•••</span>
+        </div>
+        <div class="bc-big"><span id="hr">--</span><small>bpm</small></div>
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <span><i></i>อัตราการเต้นหัวใจ (BPM)</span>
+          <span><i class="t"></i>อุณหภูมิ (°C) · 60 วินาทีล่าสุด</span>
+        </div>
+      </div></div>
+    <div class="g-vitals">
       <div class="mini-grid">
         <div class="mini">
           <div class="icon-circle">
@@ -214,35 +279,13 @@
           <div class="val" id="amb">-- °C</div>
         </div>
       </div>
-
       <div class="status-card">
         <div class="stat"><span>นิ้วบนเซนเซอร์</span><b id="finger">--</b></div>
         <div class="stat"><span>MAX30102</span><b id="maxS">--</b></div>
         <div class="stat"><span>GY-906</span><b id="mlxS">--</b></div>
       </div>
-    </section>
-
-    <!-- RIGHT -->
-    <section class="panel">
-      <h2 class="title">Diagnostics</h2>
-
-      <div class="beat-card">
-        <div class="bc-top">
-          <div class="icon-circle heart" id="heart">
-            <svg viewBox="0 0 24 24"><path d="M3 12h3l2.5-6 4 12 2.5-8 1.5 2H21"/></svg>
-          </div>
-          <h3>Heartbeat</h3>
-          <span class="dots">•••</span>
-        </div>
-        <div class="bc-big"><span id="hr">--</span><small>bpm</small></div>
-        <canvas id="chart"></canvas>
-        <div class="legend">
-          <span><i></i>อัตราการเต้นหัวใจ (BPM)</span>
-          <span><i class="t"></i>อุณหภูมิ (°C) · 60 วินาทีล่าสุด</span>
-        </div>
-      </div>
-
-      <div class="spo2-card">
+    </div>
+    <div class="g-spo2"><div class="spo2-card">
         <div class="bc-top">
           <div class="icon-circle">
             <svg viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg>
@@ -256,25 +299,10 @@
           <span class="tag" id="spo2Tag">รอข้อมูล</span>
           <span class="sub2">ค่าประมาณ ไม่ใช่เครื่องมือแพทย์</span>
         </div>
-      </div>
-
-      <div class="heat-card na" id="heatCard">
-        <div class="bc-top">
-          <div class="icon-circle">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          </div>
-          <h3>Heat stroke <span class="sub2">ประเมินความเสี่ยงฮีทสโตรก</span></h3>
-        </div>
-        <div class="heat-lv" id="heatLv">รอข้อมูล</div>
-        <div class="heat-adv" id="heatAdv">วางนิ้วบนเซนเซอร์เพื่อเริ่มประเมิน</div>
-        <div class="heat-why" id="heatWhy"></div>
-        <div class="spo2-foot"><span class="sub2">ประเมินจากอุณหภูมิผิว + ชีพจร + อากาศ ไม่ใช่การวินิจฉัย</span></div>
-      </div>
-
-      <div class="mini-grid">
+      </div></div>
+    <div class="g-ctrl"><div class="mini-grid">
         <div class="mini">
           <h4>ควบคุม LED</h4>
-          <div class="sub2" style="margin:-4px 0 10px">ไฟติดเฉพาะตอนผิดปกติ: <b id="ledWhy">ปกติ (ไฟดับ)</b></div>
           <div class="controls">
             <button id="ledOn">LED ON</button>
             <button class="alt" id="ledOff">LED OFF</button>
@@ -290,8 +318,7 @@
           <h4>ข้อความดิบจากอุปกรณ์</h4>
           <pre id="log">รอข้อมูล...</pre>
         </div>
-      </div>
-    </section>
+      </div></div>
   </div>
 
   <!-- LOG -->
@@ -317,6 +344,7 @@
       <div class="mini"><div class="label">จำนวนรายการ</div><div class="val" id="sCount">0</div></div>
       <div class="mini"><div class="label">ชีพจรเฉลี่ย (ต่ำสุด–สูงสุด)</div><div class="val"><span id="sHr">--</span><small id="sHrR"></small></div></div>
       <div class="mini"><div class="label">SpO₂ เฉลี่ย (ต่ำสุด–สูงสุด)</div><div class="val"><span id="sSp">--</span><small id="sSpR"></small></div></div>
+      <div class="mini"><div class="label">ความเสี่ยงฮีทสโตรกสูงสุด</div><div class="val" id="sHeat">--</div></div>
     </div>
 
     <div class="tablewrap">
@@ -378,13 +406,56 @@ setInterval(saveLogs,10000);
 addEventListener('beforeunload',saveLogs);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveLogs(); });
 
+/* ---------- Heat stroke assessment ---------- */
+const HEAT_NAMES=['ปกติ','เฝ้าระวัง','เสี่ยงสูง','อันตราย'];
+const HEAT_ADVICE=[
+  '',
+  'ย้ายไปที่ร่ม/เย็น ดื่มน้ำ และพักผ่อน แล้ววัดซ้ำ',
+  'หยุดกิจกรรม ระบายความร้อน (เช็ดตัว/พัดลม/ประคบเย็น) ดื่มน้ำ และเฝ้าดูอาการใกล้ชิด',
+  'สงสัยฮีทสโตรก โทร 1669 ทันที ระหว่างรอให้ย้ายเข้าที่เย็นและระบายความร้อนอย่างเร่งด่วน'
+];
+function heatCell(k){
+  return (k===null||k===undefined) ? '–' : `<span class="heat-badge${k>0?' l'+k:''}">${HEAT_NAMES[k]||'–'}</span>`;
+}
+// เกณฑ์ตรงกับเฟิร์มแวร์: ต้องมีอุณหภูมิ > 37.5 °C ก่อนจึงจะประเมินความเสี่ยง
+function heatAssess(hr,t,amb){
+  const why=[]; let score=0;
+  if(t===null || t<=37.5) return {level:0,score:0,why,active:false};
+  score++; why.push(`อุณหภูมิผิว ${t.toFixed(1)} °C สูงกว่าปกติ`);
+  if(t>=38){ score++; why.push('อุณหภูมิ ≥ 38 °C'); }
+  if(t>=39){ score++; why.push('อุณหภูมิ ≥ 39 °C'); }
+  if(hr!==null && hr>100){ score++; why.push(`ชีพจรเร็ว ${hr} bpm`); }
+  if(hr!==null && hr>=120){ score++; why.push('ชีพจร ≥ 120 bpm'); }
+  if(amb!==null && amb>=35){ score++; why.push(`อากาศร้อน ${amb.toFixed(1)} °C`); }
+  const level = score>=5?3 : score>=3?2 : score>=2?1 : 0;
+  return {level,score,why,active:true};
+}
+function renderHeat(hr,sp,t,amb){
+  const r=heatAssess(hr,t,amb);
+  const card=$('heatCard');
+  card.className='heat-card'+(r.level>0?' l'+r.level:'');
+  $('heatName').textContent = t===null ? 'ไม่มีข้อมูล' : HEAT_NAMES[r.level];
+  $('heatScoreTxt').textContent = r.active ? ' คะแนน '+r.score : '';
+  [...$('heatMeter').children].forEach((el,i)=>el.className = (i<=r.level-1)?'on':'');
+  $('heatWhy').innerHTML = r.why.length ? r.why.map(s=>`<li>${s}</li>`).join('')
+    : `<li>${t===null?'รอข้อมูลอุณหภูมิจากเซนเซอร์':'ไม่พบปัจจัยเสี่ยงฮีทสโตรก'}</li>`;
+  $('heatAdvice').textContent = HEAT_ADVICE[r.level];
+  // เหตุที่ไฟ LED ติด (ตรงกับเฟิร์มแวร์)
+  const led=[];
+  if(r.level>=1) led.push('อุณหภูมิสูง/เสี่ยงฮีทสโตรก');
+  if(sp!==null && sp<95) led.push('SpO₂ ผิดปกติ');
+  if(hr!==null && (hr<60||hr>100)) led.push('ชีพจรผิดปกติ');
+  $('heatTag').textContent = led.length ? 'ไฟ LED ติด: '+led.join(' · ') : 'ไฟ LED: ดับ (ปกติ)';
+  return r.level;
+}
+
 function maybeLog(hr,spo2,temp,demo,heat){
   if(!recording) return;
   if(hr===null && spo2===null) return;
   const now=Date.now(), iv=(+$('logInt').value)*1000;
   if(now-lastLogAt<iv) return;
   lastLogAt=now;
-  logs.push({t:now,h:hr,s:spo2,c:temp,z:heat||0,d:demo?1:0});
+  logs.push({t:now,h:hr,s:spo2,c:temp,k:(temp===null?null:heat),d:demo?1:0});
   if(logs.length>LOG_MAX) logs.splice(0,logs.length-LOG_MAX);
   dirty=true;
   renderLog();
@@ -398,8 +469,6 @@ function stats(arr){
   return {avg:sum/v.length,min,max};
 }
 function dayRows(){ return selDate ? logs.filter(r=>dkey(r.t)===selDate) : []; }
-const HEAT_SHORT=['ปกติ','เฝ้าระวัง','เสี่ยง','อันตราย'];
-function heatCell(z){ return HEAT_SHORT[z||0]||'ปกติ'; }
 function cell(v,dp){ return (v===null||v===undefined) ? '–' : (dp!==undefined ? v.toFixed(dp) : v); }
 
 function renderLog(){
@@ -423,11 +492,13 @@ function renderLog(){
   $('sHrR').textContent=hs?`(${hs.min}–${hs.max})`:'';
   $('sSp').textContent=ss?ss.avg.toFixed(1):'--';
   $('sSpR').textContent=ss?`(${ss.min}–${ss.max})`:'';
+  const ks=stats(rows.map(r=>r.k));
+  $('sHeat').textContent = ks ? HEAT_NAMES[ks.max] : '--';
 
   const MAXSHOW=300;
   const show=rows.slice(-MAXSHOW).reverse();
   $('logBody').innerHTML = show.length
-    ? show.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.z)}</td></tr>`).join('')
+    ? show.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลในวันที่เลือก</td></tr>';
   $('logNote').textContent = rows.length>MAXSHOW
     ? `แสดง ${MAXSHOW} รายการล่าสุดบนหน้าจอ (PDF และ CSV รวมทั้งหมด ${rows.length} รายการของวันนั้น)` : '';
@@ -459,7 +530,8 @@ $('btnCsv').onclick=()=>{
   const rows=dayRows();
   if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return; }
   const csv='\ufeffวันที่,เวลา,ชีพจร (bpm),SpO2 (%),อุณหภูมิ (°C),ความเสี่ยงฮีทสโตรก,แหล่งข้อมูล\n'+
-    rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',heatCell(r.z),r.d?'demo':'device'].join(',')).join('\n');
+    rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',
+      (r.k!=null?HEAT_NAMES[r.k]:''),r.d?'demo':'device'].join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download='hydra20-'+selDate+'.csv'; a.click();
@@ -495,10 +567,9 @@ function svgChart(rows){
 function buildReport(){
   const rows=dayRows();
   if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return false; }
-  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s)), ts=stats(rows.map(r=>r.c));
+  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s)), ts=stats(rows.map(r=>r.c)), ks=stats(rows.map(r=>r.k));
   const demo=rows.some(r=>r.d);
-  const body=rows.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.z)}</td></tr>`).join('');
-  const maxHeat=Math.max(...rows.map(r=>r.z||0));
+  const body=rows.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('');
   $('report').innerHTML=`
     <h1>รายงานสัญญาณชีพ · Hydra20</h1>
     <div class="rmeta">
@@ -511,8 +582,9 @@ function buildReport(){
       <tr><td>ชีพจร (bpm)</td><td>${hs?hs.avg.toFixed(0):'–'}</td><td>${hs?hs.min:'–'}</td><td>${hs?hs.max:'–'}</td></tr>
       <tr><td>SpO₂ (%)</td><td>${ss?ss.avg.toFixed(1):'–'}</td><td>${ss?ss.min:'–'}</td><td>${ss?ss.max:'–'}</td></tr>
       <tr><td>อุณหภูมิ (°C)</td><td>${ts?ts.avg.toFixed(1):'–'}</td><td>${ts?ts.min.toFixed(1):'–'}</td><td>${ts?ts.max.toFixed(1):'–'}</td></tr>
-      <tr><td>ระดับความเสี่ยงฮีทสโตรกสูงสุด</td><td colspan="3">${heatCell(maxHeat)}</td></tr>
     </tbody></table>
+    <p><b>ความเสี่ยงฮีทสโตรกสูงสุดของวัน:</b> ${ks?HEAT_NAMES[ks.max]:'–'}
+      ${ks&&ks.max>=1?` · พบ ${rows.filter(r=>r.k>=1).length} รายการที่ระดับเฝ้าระวังขึ้นไป`:''}</p>
     ${svgChart(rows)}
     <table class="rt"><thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ฮีทสโตรก</th></tr></thead><tbody>${body}</tbody></table>
     <p class="rfoot">ค่าที่แสดงเป็นค่าประมาณจากเซนเซอร์ MAX30102 / GY-906 ไม่ใช่เครื่องมือแพทย์ ไม่ควรใช้วินิจฉัยหรือตัดสินใจทางการรักษา</p>`;
@@ -565,97 +637,33 @@ function update(d){
   else { h.classList.remove('beat'); lh.classList.remove('beat'); }
 
   // tags
-  // สถานะ "ผิดปกติ" มาจากอุปกรณ์ (al) ซึ่งยืนยันแล้วว่าเกินเกณฑ์ต่อเนื่องหลายวินาที
-  // ถ้าเพิ่งเกินเกณฑ์ครั้งสองครั้ง จะแสดงเป็น "กำลังตรวจสอบ" ไม่ตัดสินทันที
-  const al = (typeof d.al==='number') ? d.al : 0;
   const ht = $('hrTag');
   if(hr===null){ ht.textContent = d.finger===false ? 'วางนิ้วบนเซนเซอร์' : 'กำลังวัด...'; }
-  else if(al & AL.HR_LOW){ ht.textContent='ต่ำกว่าปกติ (ยืนยันต่อเนื่อง)'; }
-  else if(al & AL.HR_HIGH){ ht.textContent='สูงกว่าปกติ (ยืนยันต่อเนื่อง)'; }
-  else if(hr<TH.HR_LO || hr>TH.HR_HI){ ht.textContent='กำลังตรวจสอบค่าที่ผิดปกติ...'; }
-  else { ht.textContent='อยู่ในเกณฑ์ปกติ'; }
+  else if(hr<60){ ht.textContent='ต่ำกว่าปกติ'; }
+  else if(hr<=100){ ht.textContent='อยู่ในเกณฑ์ปกติ'; }
+  else { ht.textContent='สูงกว่าปกติ'; }
 
   const tt = $('tempTag');
   if(t===null) tt.textContent='ไม่มีข้อมูล';
   else if(t<35) tt.textContent='ต่ำ (อาจวัดที่วัตถุอื่น)';
-  else if(al & AL.TEMP) tt.textContent='สูงกว่าปกติ (ยืนยันต่อเนื่อง)';
-  else if(t>TH.TEMP_HI) tt.textContent='กำลังตรวจสอบค่าที่สูง...';
-  else tt.textContent='ปกติ';
-
-  renderHeat(d, al, hr, t);
+  else if(t<=37.5) tt.textContent='ปกติ';
+  else tt.textContent='สูงกว่าปกติ';
 
   // SpO2
   $('spo2').textContent = sp!==null ? sp : '--';
   $('spo2Bar').style.width = sp!==null ? Math.max(0,Math.min(100,(sp-70)/30*100))+'%' : '0%';
   const st = $('spo2Tag');
   if(sp===null) st.textContent = d.finger===false ? 'วางนิ้วบนเซนเซอร์' : 'กำลังวัด (นิ่งไว้ ~6 วินาที)';
-  else if(sp>=TH.SPO2_LO) st.textContent='อยู่ในเกณฑ์ปกติ';
-  else if(!(al & AL.SPO2)) st.textContent='กำลังตรวจสอบค่าที่ต่ำ... (นิ่งไว้)';
+  else if(sp>=95) st.textContent='อยู่ในเกณฑ์ปกติ';
   else if(sp>=90) st.textContent='ต่ำกว่าปกติ · ควรวัดซ้ำ';
   else st.textContent='ต่ำ · ควรวัดซ้ำและปรึกษาแพทย์';
 
   hist.hr.push(hr); hist.temp.push(t);
   if(hist.hr.length>MAXPTS){ hist.hr.shift(); hist.temp.shift(); }
   draw();
-  maybeLog(hr,sp,t,!!demoTimer,(typeof d.hs==='number')?d.hs:0);
-}
-
-/* ---------- Heat stroke + เกณฑ์ (ต้องตรงกับเฟิร์มแวร์) ---------- */
-const AL={HR_LOW:1,HR_HIGH:2,SPO2:4,TEMP:8,HEAT:16};
-const TH={N:5,CLR:3,HR_LO:60,HR_HI:100,SPO2_LO:95,TEMP_HI:37.5,HEAT1:38,HEAT2:39,AMB_HOT:32};
-const HEAT_TXT=[
-  ['ปกติ','ยังไม่พบสัญญาณเสี่ยงฮีทสโตรก'],
-  ['เฝ้าระวัง','ร่างกายเริ่มร้อน/อากาศร้อน ควรพักในที่ร่ม ดื่มน้ำ และวัดซ้ำ'],
-  ['เสี่ยงฮีทสโตรก','ย้ายเข้าที่เย็น/ร่ม คลายเสื้อผ้า ประคบเย็นที่ลำคอ-รักแร้-ขาหนีบ ดื่มน้ำ หากสับสน ซึม หรือเป็นลม โทร 1669'],
-  ['อันตราย · โทร 1669','อุณหภูมิสูงมากร่วมกับชีพจรเร็ว ควรโทร 1669 ทันที ระหว่างรอให้ลดอุณหภูมิร่างกายด้วยการประคบเย็น']
-];
-function renderHeat(d, al, hr, t){
-  const card=$('heatCard'), lv=$('heatLv'), adv=$('heatAdv'), why=$('heatWhy');
-  if(d.finger===false || (hr===null && t===null)){
-    card.className='heat-card na'; lv.textContent='รอข้อมูล';
-    adv.textContent='วางนิ้วบนเซนเซอร์เพื่อเริ่มประเมิน'; why.textContent='';
-  } else {
-    const h=Math.max(0,Math.min(3,(typeof d.hs==='number')?d.hs:0));
-    card.className='heat-card l'+h; lv.textContent=HEAT_TXT[h][0]; adv.textContent=HEAT_TXT[h][1];
-    const r=[];
-    if(t!==null) r.push('อุณหภูมิ '+t.toFixed(1)+'°C');
-    if(hr!==null) r.push('ชีพจร '+hr+' bpm');
-    if(typeof d.ambient==='number') r.push('อากาศ '+d.ambient.toFixed(1)+'°C');
-    why.textContent='ปัจจัย: '+r.join(' · ');
-  }
-  // สาเหตุที่ไฟ LED ติด
-  const n=[];
-  if(d.finger!==false){
-    if(al & AL.HEAT) n.push('เสี่ยงฮีทสโตรก');
-    if(al & AL.SPO2) n.push('SpO₂ ผิดปกติ');
-    if(al & AL.TEMP) n.push('อุณหภูมิสูง');
-    if(al & (AL.HR_LOW|AL.HR_HIGH)) n.push('ชีพจรผิดปกติ');
-  }
-  $('ledWhy').textContent = n.length ? n.join(' + ')+' (ไฟติด)' : 'ปกติ (ไฟดับ)';
-}
-
-/* ตัวประเมินฝั่งเว็บ ใช้เฉพาะโหมดสาธิต (ของจริงใช้ค่า al/hs ที่อุปกรณ์ส่งมา) */
-const dLat={};
-function dLatch(k,cond,valid){
-  const l=dLat[k]||(dLat[k]={up:0,down:0,on:false});
-  if(!valid){ l.up=l.down=0; l.on=false; return false; }
-  if(cond){ l.down=0; l.up++; if(l.up>=TH.N) l.on=true; }
-  else { l.up=0; l.down++; if(l.down>=TH.CLR) l.on=false; }
-  return l.on;
-}
-function demoAssess(d){
-  const f=d.finger;
-  const hrLow=dLatch('hl',d.hr<TH.HR_LO,f), hrHigh=dLatch('hh',d.hr>TH.HR_HI,f);
-  const sp=dLatch('sp',d.spo2<TH.SPO2_LO,f), tH=dLatch('t',d.temp>TH.TEMP_HI,f);
-  const h1=dLatch('h1',d.temp>=TH.HEAT1,f), h2=dLatch('h2',d.temp>=TH.HEAT2,f);
-  const amb=dLatch('am',d.ambient>=TH.AMB_HOT,true);
-  let hs=0;
-  if(h2&&hrHigh) hs=3;
-  else if(h2||(h1&&hrHigh)||(tH&&hrHigh&&amb)) hs=2;
-  else if(h1||(tH&&hrHigh)||(amb&&(tH||hrHigh))) hs=1;
-  let al=0;
-  if(hrLow) al|=AL.HR_LOW; if(hrHigh) al|=AL.HR_HIGH; if(sp) al|=AL.SPO2; if(tH) al|=AL.TEMP; if(hs>=2) al|=AL.HEAT;
-  return {al,hs};
+  const amb = (typeof d.ambient==='number') ? d.ambient : null;
+  const heat = renderHeat(hr,sp,t,amb);
+  maybeLog(hr,sp,t,!!demoTimer,heat);
 }
 
 setInterval(()=>{
@@ -837,39 +845,23 @@ $('bright').oninput = e=>{
 };
 
 /* ---------- Demo ---------- */
-let demoHot=false;
 function stopDemo(){
-  if(demoTimer){
-    clearInterval(demoTimer); demoTimer=null; $('btnDemo').textContent='โหมดสาธิต'; purgeDemo();
-    demoHot=false; $('btnHot').style.display='none'; $('btnHot').textContent='จำลองภาวะเสี่ยงฮีทสโตรก';
-    for(const k in dLat) delete dLat[k];
-  }
+  if(demoTimer){ clearInterval(demoTimer); demoTimer=null; $('btnDemo').textContent='โหมดสาธิต'; purgeDemo(); }
 }
-$('btnHot').onclick=()=>{
-  demoHot=!demoHot;
-  $('btnHot').textContent=demoHot?'กลับสู่ค่าปกติ':'จำลองภาวะเสี่ยงฮีทสโตรก';
-};
 $('btnDemo').onclick = ()=>{
   if(demoTimer){ stopDemo(); setConn('', 'ยังไม่เชื่อมต่อ'); return; }
   if(bleDev) disconnect();
-  $('btnDemo').textContent='หยุดสาธิต'; $('btnHot').style.display='';
+  $('btnDemo').textContent='หยุดสาธิต';
   setConn('warn','โหมดสาธิต (ข้อมูลจำลอง)');
   let t=0;
   demoTimer=setInterval(()=>{
     t++;
-    const d = demoHot
-      ? {hr:Math.round(122+6*Math.sin(t/5)+Math.random()*3),
-         spo2:Math.round(96+Math.random()),
-         temp:+(38.6+0.2*Math.sin(t/10)+Math.random()*0.1).toFixed(2),
-         ambient:+(34+Math.random()*0.3).toFixed(2),
-         finger:true,max:true,mlx:true}
-      : {hr:Math.round(74+8*Math.sin(t/6)+Math.random()*3),
-         spo2:Math.round(97+1.2*Math.sin(t/9)+Math.random()),
-         temp:+(36.4+0.4*Math.sin(t/15)+Math.random()*0.1).toFixed(2),
-         ambient:+(29.5+Math.random()*0.3).toFixed(2),
-         finger:true,max:true,mlx:true};
-    Object.assign(d, demoAssess(d));
-    update(d);
+    const hot=(t%90)>60;                    // ช่วงท้ายของทุก 90 วินาที จำลองภาวะเสี่ยงฮีทสโตรก
+    update({hr:Math.round(74+8*Math.sin(t/6)+Math.random()*3+(hot?45:0)),
+            spo2:Math.round(97+1.2*Math.sin(t/9)+Math.random()),
+            temp:+(36.4+0.4*Math.sin(t/15)+Math.random()*0.1+(hot?2:0)).toFixed(2),
+            ambient:+(29.5+Math.random()*0.3+(hot?6.5:0)).toFixed(2),
+            finger:true,max:true,mlx:true});
   },1000);
 };
 
