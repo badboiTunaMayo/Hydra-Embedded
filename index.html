@@ -284,6 +284,21 @@
     .g-beat canvas{height:120px}
   }
 
+  /* Report preview on screen (มือถือ: แสดงรายงานเต็มจอ แล้วค่อยสั่งพิมพ์/บันทึก) */
+  body.showreport{background:#fff}
+  body.showreport .wrap{display:none}
+  body.showreport #report{display:block;color:#111;font-size:13px;line-height:1.5;padding:64px 14px 40px;max-width:820px;margin:0 auto}
+  body.showreport #report h1{font-size:1.2rem;margin:0 0 4px}
+  body.showreport #report .rmeta{color:#555;margin-bottom:12px}
+  body.showreport #report table{width:100%;border-collapse:collapse;margin:8px 0}
+  body.showreport #report th,body.showreport #report td{border:1px solid #ccc;padding:4px 8px;text-align:left}
+  body.showreport #report th{background:#f0f0f0}
+  body.showreport #report svg{width:100%;height:auto;margin:8px 0}
+  body.showreport #report .rfoot{color:#666;font-size:11px;margin-top:14px}
+  .rbar{display:none}
+  body.showreport .rbar{display:flex;gap:8px;position:fixed;top:0;left:0;right:0;z-index:9;padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));background:#FFF7E7;box-shadow:0 2px 8px #0002}
+  .rbar button{flex:1;min-height:44px}
+
   /* Printable report (hidden on screen) */
   #report{display:none}
   @media print{
@@ -301,6 +316,8 @@
     #report table.rt{font-size:11px}
     #report svg{width:100%;height:auto;margin:8px 0}
     #report .rfoot{color:#666;font-size:10px;margin-top:14px}
+    .rbar{display:none!important}
+    body.showreport #report{padding:0;max-width:none;font-size:12px}
   }
 </style>
 </head>
@@ -658,11 +675,31 @@ $('btnCsv').onclick=()=>{
   const csv='\ufeffวันที่,เวลา,ชีพจร (bpm),SpO2 (%),อุณหภูมิ (°C),ความเสี่ยงฮีทสโตรก,แหล่งข้อมูล\n'+
     rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',
       (r.k!=null?HEAT_NAMES[r.k]:''),r.d?'demo':'device'].join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download='hydra20-'+selDate+'.csv'; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  saveFile('hydra20-'+selDate+'.csv', csv, 'text/csv;charset=utf-8');
 };
+
+// บันทึกไฟล์: มือถือใช้เมนูแชร์/บันทึกของเครื่อง → ถ้าไม่ได้ลองดาวน์โหลดปกติ → ถ้ายังไม่ได้เปิดเป็นข้อความให้คัดลอก
+async function saveFile(name, text, type){
+  const blob=new Blob([text],{type});
+  try{
+    const file=new File([blob],name,{type:type.split(';')[0]});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:name});
+      return;
+    }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=name;
+    a.style.display='none'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },30000);
+    log('บันทึกไฟล์: '+name);
+    return;
+  }catch(e){}
+  const w=window.open('','_blank');
+  if(w){ w.document.write('<meta charset="utf-8"><pre style="white-space:pre-wrap">'+text.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>'); w.document.close(); }
+  else alert('เบราว์เซอร์นี้บันทึกไฟล์ไม่ได้ ลองเปิดหน้านี้ด้วย Chrome');
+}
 
 /* ---------- PDF report (ใช้หน้าต่างพิมพ์ของเบราว์เซอร์ → Save as PDF) ---------- */
 function svgChart(rows){
@@ -717,12 +754,31 @@ function buildReport(){
   return true;
 }
 
-$('btnPdf').onclick=()=>{
-  if(!buildReport()) return;
+function doPrint(){
   const old=document.title;
   document.title='Hydra20-'+selDate;            // ชื่อไฟล์ PDF เริ่มต้น
   window.onafterprint=()=>{ document.title=old; window.onafterprint=null; };
-  window.print();
+  try{ window.print(); }catch(e){ alert('เบราว์เซอร์นี้สั่งพิมพ์ไม่ได้ ลองกด "บันทึกเป็นไฟล์ HTML" หรือแคปหน้าจอรายงาน'); }
+}
+function closeReport(){
+  document.body.classList.remove('showreport');
+  const b=document.querySelector('.rbar'); if(b) b.remove();
+  scrollTo(0,0); setTimeout(draw,50);
+}
+$('btnPdf').onclick=()=>{
+  if(!buildReport()) return;
+  // แสดงรายงานเต็มจอก่อน (มือถือกดพิมพ์จากหน้านี้ได้ / แคปหน้าจอได้ / แชร์เป็นไฟล์ HTML ได้)
+  const bar=document.createElement('div'); bar.className='rbar';
+  bar.innerHTML='<button id="rPrint">พิมพ์ / PDF</button><button class="alt" id="rSave">บันทึกไฟล์ HTML</button><button class="ghost" id="rClose">ปิด</button>';
+  document.body.appendChild(bar);
+  document.body.classList.add('showreport');
+  scrollTo(0,0);
+  $('rPrint').onclick=doPrint;
+  $('rClose').onclick=closeReport;
+  $('rSave').onclick=()=>{
+    const html='<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hydra20-'+selDate+'</title><style>body{font-family:sans-serif;color:#111;font-size:13px;line-height:1.5;padding:14px;max-width:820px;margin:0 auto}table{width:100%;border-collapse:collapse;margin:8px 0}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}th{background:#f0f0f0}svg{width:100%;height:auto}.heat-badge{padding:1px 8px;border-radius:99px;background:#eee}.rfoot{color:#666;font-size:11px}</style></head><body>'+$('report').innerHTML+'</body></html>';
+    saveFile('hydra20-'+selDate+'.html', html, 'text/html;charset=utf-8');
+  };
 };
 
 /* ---------- Clock ---------- */
