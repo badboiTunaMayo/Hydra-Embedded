@@ -2,14 +2,30 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFF7E7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hydra20">
 <title>Hydra20 Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --green:#cdeabc; --blue:#bfe4ee; --lilac:#e3def7; --gray:#f3f3f3; --bg:#e8eaeb;
-    --ink:#111; --muted:#8b8b8b; --line:#d9d9d9; --mint:#f5f8be;
+    --bg:#FFF7E7;
+    --pink:#FFE1EC;
+    --pink-deep:#FFC9DE;
+    --yellow:#FFEFC2;
+    --yellow-deep:#FFE49A;
+    --ink:#432A3D;
+    --muted:#93798B;
+    --blue:#72cfe2;
+    --blue-deep:#35b6d6bb;
+    --rose:#F0729B;
+    --line:#F6CFDF;
+    --paper:#FFFDF8;
+    --lilac:#EBE3FA;
+    --lilac-deep:#D8CCF3;
   }
   *{box-sizing:border-box}
   body{
@@ -21,20 +37,20 @@
   header h1{margin:0;font-size:1.25rem;font-weight:600}
   .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
   .head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:#fff;font-size:.85rem}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:var(--paper);font-size:.85rem}
   .dot{width:10px;height:10px;border-radius:50%;background:#c4c4c4}
   .dot.on{background:#5cc97a;box-shadow:0 0 0 4px #5cc97a33}
   .dot.warn{background:#f2c14e}
-  .dot.rec{background:#e0344f;box-shadow:0 0 0 4px #e0344f33}
+  .dot.rec{background:var(--rose);box-shadow:0 0 0 4px #F0729B33}
 
   button{
     font:inherit;font-size:.88rem;cursor:pointer;border:0;border-radius:999px;padding:10px 18px;
     background:var(--ink);color:#fff;font-weight:500;transition:.15s
   }
   button:hover{opacity:.82}
-  button.alt{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
-  button.ghost{background:#fff;color:var(--ink)}
-  select{font:inherit;font-size:.85rem;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;background:#fff;color:var(--ink)}
+  button.alt{background:var(--paper);color:var(--ink);border:1.5px solid var(--ink)}
+  button.ghost{background:var(--paper);color:var(--ink)}
+  select{font:inherit;font-size:.85rem;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;background:var(--paper);color:var(--ink)}
 
   .panel.dash{
     display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;
@@ -54,7 +70,7 @@
   .g-vitals .status-card{flex:1;display:flex;flex-direction:column;justify-content:center}
   .g-ctrl .mini-grid{grid-template-columns:1fr;grid-auto-rows:1fr}
   .g-beat .beat-card{display:flex;flex-direction:column}
-  .g-beat canvas{height:230px;flex:none}
+  .g-beat canvas{height:200px;flex:none}
   .g-beat .legend{margin-top:auto;padding-top:8px;flex-wrap:wrap}
   .spo2-card{display:flex;flex-direction:column}
   .spo2-card .bc-big{margin-bottom:14px}
@@ -66,55 +82,78 @@
   @media(max-width:820px){
     .panel.dash{grid-template-columns:1fr;grid-template-areas:"health" "heat" "title" "beat" "vitals" "spo2" "ctrl"}
   }
-  .panel{background:#fff;border-radius:36px;padding:18px;display:flex;flex-direction:column;gap:14px}
+  .panel{background:var(--paper);border-radius:36px;padding:18px;display:flex;flex-direction:column;gap:14px}
   .title{margin:6px 6px 0;font-size:2rem;font-weight:600;letter-spacing:-.01em}
 
-  .icon-circle{width:48px;height:48px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
+  .icon-circle{width:48px;height:48px;border-radius:50%;background:var(--paper);display:grid;place-items:center;flex:none}
   .icon-circle svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
   /* Health (mint) */
-  .health-card{background:var(--mint);border-radius:28px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:240px}
+  .health-card{background:var(--yellow);border-radius:28px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:240px}
   .hc-left{display:flex;flex-direction:column;justify-content:space-between;padding:6px 4px 4px 6px}
   .hc-left h2{font-size:1.7rem;margin:22px 0 4px;font-weight:600}
-  .hc-left p{margin:0 0 14px;font-size:.78rem;color:#4f6a45;line-height:1.4}
+  .hc-left p{margin:0 0 14px;font-size:.78rem;color:var(--muted);line-height:1.4}
   .outline-pill{align-self:flex-start;border:1.5px solid var(--ink);border-radius:999px;padding:6px 14px;font-size:.8rem;background:transparent}
-  .hc-right{background:#fff;border-radius:24px;display:grid;place-items:center;padding:10px}
+  .hc-right{background:var(--paper);border-radius:24px;display:grid;place-items:center;padding:10px}
   .hc-right svg{width:100%;max-width:170px;height:auto;overflow:visible}
 
   /* Mini gray cards */
   .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:420px){.mini-grid{grid-template-columns:1fr}}
-  .mini{background:var(--gray);border-radius:26px;padding:16px}
+  .mini{background:var(--pink);border-radius:26px;padding:16px}
   .mini .label{font-size:.78rem;color:var(--muted);margin-top:16px}
   .mini .val{font-size:1.5rem;font-weight:600;margin-top:2px}
   .mini .val small{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:3px}
-  .tag{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:999px;font-size:.74rem;background:#fff;color:#555}
-  .stat{display:flex;justify-content:space-between;font-size:.88rem;padding:9px 2px;border-bottom:1px solid #e4e4e4;color:var(--muted)}
+  .tag{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:999px;font-size:.74rem;background:var(--paper);color:var(--ink)}
+  .stat{display:flex;justify-content:space-between;font-size:.88rem;padding:9px 2px;border-bottom:1px solid var(--line);color:var(--muted)}
   .stat:last-child{border-bottom:0}
   .stat b{color:var(--ink);font-weight:500}
-  .status-card{background:var(--gray);border-radius:26px;padding:10px 18px}
+  .status-card{background:#EEEDEB;border-radius:26px;padding:10px 18px}
+  .status-card .stat{border-bottom-color:#D9D7D3}
 
   /* Heartbeat (blue) */
   .beat-card{background:var(--blue);border-radius:30px;padding:18px}
   .bc-top{display:flex;align-items:center;gap:12px}
   .bc-top .icon-circle{width:52px;height:52px}
   .bc-top h3{margin:0;font-size:1.2rem;font-weight:500;flex:1}
-  .dots{letter-spacing:2px;color:#3b5a65}
+  .dots{letter-spacing:2px;color:var(--ink)}
   .bc-big{font-size:4.4rem;font-weight:400;line-height:1;margin:22px 0 8px;letter-spacing:-.02em}
-  .bc-big small{font-size:.95rem;color:#4b6a75;margin-left:8px;letter-spacing:0}
+  .bc-big small{font-size:.95rem;color:var(--muted);margin-left:8px;letter-spacing:0}
   canvas{width:100%;height:190px;display:block}
   .legend{display:flex;gap:16px;font-size:.78rem;color:#4b6a75;margin-top:8px}
   .legend i{display:inline-block;width:14px;height:2px;margin-right:6px;vertical-align:middle;background:var(--ink)}
   .legend i.t{background:#5d7a85}
 
+  /* Heart Rate card (สไตล์ตามภาพตัวอย่าง) */
+  .beat-card{background:#DDF3F9}
+  .beat-card .icon-circle svg{stroke:var(--rose)}
+  .beat-card .dots{color:var(--ink);font-weight:700}
+  .beat-card .bc-top h3{line-height:1.2}
+  .live{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:500;margin-top:3px;color:var(--ink)}
+  .live i{width:7px;height:7px;border-radius:50%;background:#b5b5b5}
+  .live.on i{background:#22b36b}
+  .beat-main{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 6px}
+  .beat-main .bc-big{margin:0}
+  .beat-main .bc-big small{color:var(--ink);margin-left:10px}
+  .hr-pill{padding:6px 20px;border-radius:999px;font-size:.85rem;background:#e4f7ec;color:#1f8f55;border:1.5px solid #fff;white-space:nowrap}
+  .hr-pill.low{background:#fff3d6;color:#8a5a00}
+  .hr-pill.high{background:#ffe1e1;color:#b3261e}
+  .hr-pill.na{background:var(--paper);color:var(--muted)}
+  .beat-note{font-size:.84rem;color:var(--ink);margin:auto 2px 0;padding-top:10px}
+
+  /* ค่าชีพจรในกล่อง Health */
+  .hc-left h2{margin:16px 0 2px}
+  .hc-bpm{font-size:2.6rem;font-weight:500;line-height:1;margin:6px 0 8px;letter-spacing:-.02em}
+  .hc-bpm small{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:0}
+
   /* SpO2 (lilac) */
-  .spo2-card{background:var(--lilac);border-radius:30px;padding:18px}
-  .spo2-card .bc-big small{color:#5b5486}
-  .spo2-card .dots{color:#5b5486}
+  .spo2-card{background:var(--lilac-deep);border-radius:30px;padding:18px}
+  .spo2-card .bc-big small{color:var(--muted)}
+  .spo2-card .dots{color:var(--ink)}
   .bar{height:8px;border-radius:99px;background:#ffffffb0;overflow:hidden;margin-top:4px}
   .bar i{display:block;height:100%;width:0;background:var(--ink);border-radius:99px;transition:width .4s}
   .spo2-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
-  .spo2-foot .tag{margin:0;background:#fff}
+  .spo2-foot .tag{margin:0;background:var(--paper)}
 
   /* Heat stroke risk */
   .heat-card{--hc:#cdeabc;--hd:#3f6b32;background:var(--hc);border-radius:30px;padding:18px;transition:background .4s}
@@ -128,18 +167,19 @@
   .heat-meter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
   .heat-meter i{height:8px;border-radius:99px;background:#ffffffb0}
   .heat-meter i.on{background:var(--hd)}
-  .heat-why{margin:12px 0 0;padding:0;list-style:none;font-size:.82rem;color:#333;line-height:1.7}
+  .heat-why{margin:12px 0 0;padding:0;list-style:none;font-size:.82rem;color:var(--ink);line-height:1.7}
   .heat-why li::before{content:"• ";color:var(--hd)}
-  .heat-advice{margin-top:10px;font-size:.84rem;font-weight:500;color:#222}
-  .heat-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;background:#fff;color:#444}
+  .heat-advice{margin-top:10px;font-size:.84rem;font-weight:500;color:var(--ink)}
+  .heat-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;background:var(--paper);color:var(--ink)}
   .heat-badge.l1{background:#fbe9a6}.heat-badge.l2{background:#ffc999}.heat-badge.l3{background:#ffb3b3}
 
   .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .controls + .controls{margin-top:14px}
   .sub2{font-size:.8rem;color:var(--muted)}
   input[type=range]{accent-color:var(--ink);width:140px}
+  .g-ctrl .mini{background:#EEEDEB}
   .mini h4{margin:0 0 12px;font-size:.9rem;font-weight:500}
-  pre{margin:0;height:130px;overflow:auto;background:#fff;border-radius:16px;padding:12px;font-size:.74rem;color:#444;white-space:pre-wrap;word-break:break-all}
+  pre{margin:0;height:130px;overflow:auto;background:var(--paper);border-radius:16px;padding:12px;font-size:.74rem;color:var(--ink);white-space:pre-wrap;word-break:break-all}
 
   /* Log panel */
   .logpanel{margin-top:20px}
@@ -148,11 +188,11 @@
   .sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
   .sumgrid .mini{padding:14px 16px}
   .sumgrid .label{margin-top:0}
-  .tablewrap{max-height:340px;overflow:auto;border-radius:22px;background:var(--gray)}
+  .tablewrap{max-height:340px;overflow:auto;border-radius:22px;background:var(--pink)}
   table.logt{width:100%;border-collapse:collapse;font-size:.88rem}
   table.logt th,table.logt td{padding:10px 16px;text-align:left}
-  table.logt thead th{position:sticky;top:0;background:#e6e6e6;font-weight:500;color:#555}
-  table.logt tbody tr:nth-child(even){background:#fafafa}
+  table.logt thead th{position:sticky;top:0;background:var(--lilac-deep);font-weight:500;color:var(--ink)}
+  table.logt tbody tr:nth-child(even){background:var(--paper)}
   table.logt td.empty{text-align:center;color:var(--muted);padding:28px}
 
   /* Heart animation */
@@ -162,6 +202,87 @@
   @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.07)}}
 
   .note{font-size:.78rem;color:var(--muted);margin:18px 6px 0;line-height:1.6}
+
+  /* ===== Mobile / touch ===== */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  button,select,input{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  button:active{opacity:.7;transform:scale(.97)}
+  .wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(48px,env(safe-area-inset-bottom))}
+  .tablewrap{-webkit-overflow-scrolling:touch}
+  #btFallback{display:none;background:#fff3d6;color:#6b4a00;border-radius:20px;padding:12px 16px;font-size:.82rem;line-height:1.5;margin-bottom:14px}
+  #btFallback.show{display:block}
+  @media(hover:none){button:hover{opacity:1}}
+
+  @media(max-width:600px){
+    .wrap{padding-top:max(14px,env(safe-area-inset-top));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+    header{margin-bottom:12px;gap:10px}
+    header h1{font-size:1.1rem}
+    .sub{font-size:.74rem}
+    .head-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .head-actions .pill{grid-column:1/-1;justify-content:center;padding:8px 12px;font-size:.8rem}
+    .head-actions button{width:100%;min-height:46px}
+
+    .panel{border-radius:28px;padding:12px;gap:12px}
+    .panel.dash{gap:12px}
+    .title{font-size:1.5rem;margin:4px 4px 0}
+    .g-title{margin:6px 4px 0}
+
+    button{min-height:44px;padding:10px 16px}
+    select{min-height:44px;font-size:16px;max-width:100%}
+    input[type=range]{width:100%;min-height:32px;flex:1}
+
+    .health-card{grid-template-columns:1.1fr .9fr;min-height:200px;border-radius:24px;padding:12px}
+    .hc-left h2{font-size:1.4rem;margin:12px 0 2px}
+    .hc-bpm{font-size:2.3rem}
+    .hc-right{border-radius:20px;padding:8px}
+    .hc-right svg{max-width:130px}
+    .outline-pill{font-size:.74rem;padding:5px 11px}
+
+    .beat-card,.spo2-card,.heat-card{border-radius:26px;padding:14px}
+    .bc-top{gap:10px}
+    .bc-top h3{font-size:1.05rem}
+    .bc-top .icon-circle{width:44px;height:44px}
+    .bc-big{font-size:3.4rem;margin:16px 0 6px}
+    .heat-card .bc-big{font-size:2.1rem}
+    .beat-main{flex-wrap:wrap;margin:14px 0 4px}
+    .g-beat canvas{height:150px}
+    .heat-why{font-size:.8rem}
+    .spo2-foot{flex-direction:column;align-items:flex-start}
+
+    .mini{border-radius:22px;padding:12px}
+    .mini .label{font-size:.72rem;margin-top:10px}
+    .mini .val{font-size:1.3rem}
+    .tag{font-size:.7rem}
+    /* วางการ์ดอุณหภูมิ 2 ช่องเคียงกันบนมือถือ */
+    .g-vitals .mini-grid{grid-template-columns:1fr 1fr}
+    .g-ctrl .mini-grid{grid-template-columns:1fr}
+    .status-card{border-radius:22px;padding:6px 14px}
+    .controls button{flex:1 1 30%}
+    .controls .sub2:first-child{flex:none}
+    pre{height:110px;font-size:.7rem}
+
+    .logpanel{margin-top:14px}
+    .logbar{gap:8px}
+    .logbar .grow{display:none}
+    .logbar .pill{width:100%;justify-content:center}
+    .logbar select{flex:1;min-width:0}
+    .logbar button{flex:1 1 45%}
+    .sumgrid{grid-template-columns:1fr 1fr;gap:10px}
+    .sumgrid .mini{padding:12px}
+    .tablewrap{max-height:300px;border-radius:18px}
+    table.logt{font-size:.8rem;min-width:420px}
+    table.logt th,table.logt td{padding:8px 10px;white-space:nowrap}
+    .note{font-size:.72rem}
+  }
+  @media(max-width:360px){
+    .head-actions{grid-template-columns:1fr}
+    .health-card{grid-template-columns:1fr}
+    .hc-right{display:none}
+    .sumgrid{grid-template-columns:1fr}
+  }
+  @media(max-height:480px) and (orientation:landscape){
+    .g-beat canvas{height:120px}
+  }
 
   /* Printable report (hidden on screen) */
   #report{display:none}
@@ -198,6 +319,8 @@
     </div>
   </header>
 
+  <div id="btFallback">เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth — บน Android ให้เปิดด้วย Chrome · บน iPhone/iPad ให้ใช้แอป Bluefy · ระหว่างนี้ลอง "โหมดสาธิต" ได้</div>
+
   <div class="panel dash">
     <div class="g-health"><div class="health-card">
         <div class="hc-left">
@@ -206,6 +329,7 @@
               <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/><path d="M8.5 11.5h2l1-2 1.5 4 1-2h1.5"/></svg>
             </div>
             <h2>Health</h2>
+            <div class="hc-bpm"><span id="hr2">--</span><small>bpm</small></div>
             <p>ข้อมูลล่าสุด<br><span id="age">--</span></p>
           </div>
           <span class="outline-pill" id="hrTag">รอข้อมูล</span>
@@ -214,17 +338,17 @@
           <svg class="beatsvg" id="logoHeart" viewBox="0 0 200 210">
             <defs>
               <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4d4d4"/>
+                <stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#FFC9DE"/>
               </linearGradient>
             </defs>
-            <rect x="82" y="8" width="22" height="52" rx="11" fill="url(#hg)" stroke="#cfcfcf"/>
-            <rect x="110" y="22" width="20" height="46" rx="10" fill="url(#hg)" stroke="#cfcfcf" transform="rotate(14 120 45)"/>
-            <rect x="56" y="24" width="20" height="46" rx="10" fill="url(#hg)" stroke="#cfcfcf" transform="rotate(-18 66 47)"/>
-            <path d="M100 196C28 146 18 84 60 62c20-10 38 2 40 16 2-14 22-26 42-16 42 22 32 84-42 134z" fill="url(#hg)" stroke="#cfcfcf" stroke-width="1.5"/>
-            <path d="M100 78c-6 30-4 70 0 118" fill="none" stroke="#dcdcdc" stroke-width="1.5"/>
-            <path d="M64 92c10 14 14 38 10 62" fill="none" stroke="#e1e1e1" stroke-width="1.5"/>
-            <g fill="#fff" stroke="#bdbdbd"><circle cx="118" cy="58" r="7"/><circle cx="78" cy="120" r="7"/><circle cx="112" cy="170" r="7"/></g>
-            <g fill="#222"><circle cx="118" cy="58" r="2.2"/><circle cx="78" cy="120" r="2.2"/><circle cx="112" cy="170" r="2.2"/></g>
+            <rect x="82" y="8" width="22" height="52" rx="11" fill="url(#hg)" stroke="#F0B5CB"/>
+            <rect x="110" y="22" width="20" height="46" rx="10" fill="url(#hg)" stroke="#F0B5CB" transform="rotate(14 120 45)"/>
+            <rect x="56" y="24" width="20" height="46" rx="10" fill="url(#hg)" stroke="#F0B5CB" transform="rotate(-18 66 47)"/>
+            <path d="M100 196C28 146 18 84 60 62c20-10 38 2 40 16 2-14 22-26 42-16 42 22 32 84-42 134z" fill="url(#hg)" stroke="#F0B5CB" stroke-width="1.5"/>
+            <path d="M100 78c-6 30-4 70 0 118" fill="none" stroke="#F6CFDF" stroke-width="1.5"/>
+            <path d="M64 92c10 14 14 38 10 62" fill="none" stroke="#F6CFDF" stroke-width="1.5"/>
+            <g fill="#FFFDF8" stroke="#F0729B"><circle cx="118" cy="58" r="7"/><circle cx="78" cy="120" r="7"/><circle cx="112" cy="170" r="7"/></g>
+            <g fill="#432A3D"><circle cx="118" cy="58" r="2.2"/><circle cx="78" cy="120" r="2.2"/><circle cx="112" cy="170" r="2.2"/></g>
           </svg>
         </div>
       </div></div>
@@ -249,17 +373,19 @@
     <div class="g-beat"><div class="beat-card">
         <div class="bc-top">
           <div class="icon-circle heart" id="heart">
-            <svg viewBox="0 0 24 24"><path d="M3 12h3l2.5-6 4 12 2.5-8 1.5 2H21"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/><path d="M8.5 11.5h2l1-2 1.5 4 1-2h1.5"/></svg>
           </div>
-          <h3>Heartbeat</h3>
+          <h3>Heart Rate
+            <div class="live" id="liveBox"><span id="liveTxt">Offline</span><i></i></div>
+          </h3>
           <span class="dots">•••</span>
         </div>
-        <div class="bc-big"><span id="hr">--</span><small>bpm</small></div>
-        <canvas id="chart"></canvas>
-        <div class="legend">
-          <span><i></i>อัตราการเต้นหัวใจ (BPM)</span>
-          <span><i class="t"></i>อุณหภูมิ (°C) · 60 วินาทีล่าสุด</span>
+        <div class="beat-main">
+          <div class="bc-big"><span id="hr">--</span><small>bpm</small></div>
+          <span class="hr-pill na" id="hrPill">รอข้อมูล</span>
         </div>
+        <canvas id="chart"></canvas>
+        <div class="beat-note" id="hrNote">รอข้อมูลจากเซนเซอร์</div>
       </div></div>
     <div class="g-vitals">
       <div class="mini-grid">
@@ -617,6 +743,11 @@ function log(line){
   el.textContent = lines.join('\n'); el.scrollTop = el.scrollHeight;
 }
 
+function setLive(on){
+  $('liveBox').className='live'+(on?' on':'');
+  $('liveTxt').textContent=on?'Live':'Offline';
+}
+
 function update(d){
   lastData = Date.now();
   const hr = (typeof d.hr==='number') ? d.hr : null;
@@ -624,6 +755,8 @@ function update(d){
   const sp = (typeof d.spo2==='number') ? d.spo2 : null;
 
   $('hr').textContent = hr!==null ? hr : '--';
+  $('hr2').textContent = hr!==null ? hr : '--';
+  setLive(true);
   $('temp').textContent = t!==null ? t.toFixed(1) : '--';
   $('amb').textContent = (typeof d.ambient==='number') ? d.ambient.toFixed(1)+' °C' : '-- °C';
   $('finger').textContent = d.finger ? 'มี' : 'ไม่มี';
@@ -637,11 +770,17 @@ function update(d){
   else { h.classList.remove('beat'); lh.classList.remove('beat'); }
 
   // tags
-  const ht = $('hrTag');
-  if(hr===null){ ht.textContent = d.finger===false ? 'วางนิ้วบนเซนเซอร์' : 'กำลังวัด...'; }
-  else if(hr<60){ ht.textContent='ต่ำกว่าปกติ'; }
-  else if(hr<=100){ ht.textContent='อยู่ในเกณฑ์ปกติ'; }
-  else { ht.textContent='สูงกว่าปกติ'; }
+  const ht = $('hrTag'), hp = $('hrPill'), hn = $('hrNote');
+  let cls='', pt, note;
+  if(hr===null){
+    cls='na';
+    if(d.finger===false){ ht.textContent='วางนิ้วบนเซนเซอร์'; pt='วางนิ้ว'; note='วางนิ้วบนเซนเซอร์เพื่อเริ่มวัดชีพจร'; }
+    else { ht.textContent='กำลังวัด...'; pt='กำลังวัด'; note='กำลังวัดชีพจร นิ่งไว้สักครู่'; }
+  }
+  else if(hr<60){ ht.textContent='ต่ำกว่าปกติ'; pt='ต่ำ'; cls='low'; note='ชีพจรต่ำกว่าปกติ'; }
+  else if(hr<=100){ ht.textContent='อยู่ในเกณฑ์ปกติ'; pt='ปกติ'; note='อัตราการเต้นหัวใจอยู่ในเกณฑ์ปกติ'; }
+  else { ht.textContent='สูงกว่าปกติ'; pt='สูง'; cls='high'; note='ชีพจรสูงกว่าปกติ'; }
+  hp.textContent=pt; hp.className='hr-pill'+(cls?' '+cls:''); hn.textContent=note;
 
   const tt = $('tempTag');
   if(t===null) tt.textContent='ไม่มีข้อมูล';
@@ -670,6 +809,7 @@ setInterval(()=>{
   if(!lastData){ return; }
   const s = Math.floor((Date.now()-lastData)/1000);
   $('age').textContent = s+' วินาทีที่แล้ว';
+  setLive(s<=3);
   if(isConn() && s>3) setConn('warn','เชื่อมต่ออยู่ แต่ไม่มีข้อมูล');
   else if(isConn()) setConn('on','เชื่อมต่อแล้ว');
 },1000);
@@ -691,49 +831,39 @@ function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H);
 
-  const pad=6, xAt=i=>pad+(W-2*pad)*i/(MAXPTS-1);
-  const n=hist.hr.length;
-  let last=-1; hist.hr.forEach((v,i)=>{ if(v!==null && v!==undefined) last=i; });
-  const hasData = n>0;
-  const cx = hasData ? xAt(last>=0?last:n-1) : W/2;
+  // กราฟชีพจรสไตล์ ECG: เส้นไล่สีฟ้าอมเขียว→น้ำเงิน + เงาสะท้อนจาง ๆ ด้านล่าง + จุดค่าล่าสุด
+  const pad=6, top=14, base=Math.round(H*0.64);
+  const xAt=i=>pad+(W-2*pad)*i/(MAXPTS-1);
+  const yAt=v=>base-(base-top)*Math.min(1,Math.max(0,(v-40)/120));
+  const mirror=y=>base+(base-y)*0.55;
 
-  // highlight band + dashed line + bubble
-  const bw=90, bx=Math.min(Math.max(cx-bw/2,0),W-bw);
-  ctx.fillStyle='rgba(255,255,255,.45)';
-  rr(ctx,bx,30,bw,H-30,14); ctx.fill();
-  ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle='#111'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(cx,26); ctx.lineTo(cx,H); ctx.stroke(); ctx.restore();
+  const grad=ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#72cfe2'); grad.addColorStop(1,'#35b6d6');
 
-  const hrVal = last>=0 ? hist.hr[last] : null;
-  const label = (hrVal!==null ? hrVal : '--')+' bpm';
-  ctx.font='12px Prompt, sans-serif';
-  const bwid=ctx.measureText(label).width+22, bxx=Math.min(Math.max(cx-bwid/2,0),W-bwid);
-  ctx.fillStyle='#fff'; ctx.strokeStyle='#222'; ctx.lineWidth=1;
-  rr(ctx,bxx,2,bwid,24,12); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#111'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(label,bxx+bwid/2,14);
+  const pts=hist.hr.map((v,i)=>(v===null||v===undefined)?null:{x:xAt(i),y:yAt(v)});
+  let lastPt=null; pts.forEach(p=>{ if(p) lastPt=p; });
 
-  // series
-  const series=[
-    {data:hist.hr,   min:40, max:160, color:'#111',    w:1.6, y0:46,      y1:H*0.62},
-    {data:hist.temp, min:30, max:42,  color:'#5d7a85', w:1.2, y0:H*0.72,  y1:H-10}
-  ];
-  series.forEach(s=>{
-    ctx.strokeStyle=s.color; ctx.lineWidth=s.w; ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.beginPath(); let started=false;
-    if(!s.data.length){
-      const y=(s.y0+s.y1)/2; ctx.moveTo(pad,y); ctx.lineTo(W-pad,y);
-    } else {
-      s.data.forEach((v,i)=>{
-        if(v===null||v===undefined){ started=false; return; }
-        const x=xAt(i);
-        const k=Math.min(1,Math.max(0,(v-s.min)/(s.max-s.min)));
-        const y=s.y1-(s.y1-s.y0)*k;
-        if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
-      });
-    }
-    ctx.stroke();
-  });
+  const trace=(fy)=>{
+    ctx.beginPath();
+    if(!lastPt){ const y=fy((top+base)/2); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); return; }
+    let started=false;
+    pts.forEach(p=>{
+      if(!p){ started=false; return; }
+      const y=fy(p.y);
+      if(!started){ ctx.moveTo(p.x,y); started=true; } else ctx.lineTo(p.x,y);
+    });
+  };
+  ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle=grad;
+
+  ctx.globalAlpha=.16; ctx.lineWidth=1.2; trace(mirror); ctx.stroke();   // เงาสะท้อน
+  ctx.globalAlpha=1;   ctx.lineWidth=1.6; trace(y=>y);    ctx.stroke();   // เส้นหลัก
+
+  if(lastPt){
+    ctx.fillStyle='rgba(53,182,214,.28)';
+    ctx.beginPath(); ctx.arc(lastPt.x,lastPt.y,9,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#35b6d6'; ctx.strokeStyle='#FFFDF8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(lastPt.x,lastPt.y,4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
 }
 draw();
 window.addEventListener('resize',draw);
@@ -866,6 +996,23 @@ $('btnDemo').onclick = ()=>{
 };
 
 renderLog();
+
+/* ---------- Mobile helpers ---------- */
+if(!navigator.bluetooth) $('btFallback').classList.add('show');
+// หมุนหน้าจอ/ปรับขนาด → วาดกราฟใหม่
+addEventListener('orientationchange',()=>setTimeout(draw,250));
+// กลับมาเปิดแท็บ → วาดกราฟและบันทึกข้อมูลทันที
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) draw(); });
+// กันหน้าจอดับระหว่างเชื่อมต่อ (ถ้าเบราว์เซอร์รองรับ)
+let wakeLock=null;
+async function keepAwake(){
+  try{ if('wakeLock' in navigator && !wakeLock && (isConn()||demoTimer)){
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+  } }catch(e){}
+}
+setInterval(keepAwake,5000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) keepAwake(); });
 </script>
 </body>
 </html>
