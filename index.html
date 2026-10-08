@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hydra20 Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#cdeabc; --blue:#bfe4ee; --lilac:#e3def7; --gray:#f3f3f3; --bg:#e8eaeb;
+    --ink:#111; --muted:#8b8b8b; --line:#d9d9d9;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--ink); background:var(--bg);
+    font-family:"Prompt","Sarabun","Segoe UI",system-ui,sans-serif;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  header h1{margin:0;font-size:1.25rem;font-weight:600}
+  .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:#fff;font-size:.85rem}
+  .dot{width:10px;height:10px;border-radius:50%;background:#c4c4c4}
+  .dot.on{background:#5cc97a;box-shadow:0 0 0 4px #5cc97a33}
+  .dot.warn{background:#f2c14e}
+  .dot.rec{background:#e0344f;box-shadow:0 0 0 4px #e0344f33}
+
+  button{
+    font:inherit;font-size:.88rem;cursor:pointer;border:0;border-radius:999px;padding:10px 18px;
+    background:var(--ink);color:#fff;font-weight:500;transition:.15s
+  }
+  button:hover{opacity:.82}
+  button.alt{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+  button.ghost{background:#fff;color:var(--ink)}
+  select{font:inherit;font-size:.85rem;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;background:#fff;color:var(--ink)}
+
+  .layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+  .panel{background:#fff;border-radius:36px;padding:18px;display:flex;flex-direction:column;gap:14px}
+  .title{margin:6px 6px 0;font-size:2rem;font-weight:600;letter-spacing:-.01em}
+
+  .icon-circle{width:48px;height:48px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
+  .icon-circle svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Health (green) */
+  .health-card{background:var(--green);border-radius:28px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:240px}
+  .hc-left{display:flex;flex-direction:column;justify-content:space-between;padding:6px 4px 4px 6px}
+  .hc-left h2{font-size:1.7rem;margin:22px 0 4px;font-weight:600}
+  .hc-left p{margin:0 0 14px;font-size:.78rem;color:#4f6a45;line-height:1.4}
+  .outline-pill{align-self:flex-start;border:1.5px solid var(--ink);border-radius:999px;padding:6px 14px;font-size:.8rem;background:transparent}
+  .hc-right{background:#fff;border-radius:24px;display:grid;place-items:center;padding:10px}
+  .hc-right svg{width:100%;max-width:170px;height:auto;overflow:visible}
+
+  /* Mini gray cards */
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:420px){.mini-grid{grid-template-columns:1fr}}
+  .mini{background:var(--gray);border-radius:26px;padding:16px}
+  .mini .label{font-size:.78rem;color:var(--muted);margin-top:16px}
+  .mini .val{font-size:1.5rem;font-weight:600;margin-top:2px}
+  .mini .val small{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:3px}
+  .tag{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:999px;font-size:.74rem;background:#fff;color:#555}
+  .stat{display:flex;justify-content:space-between;font-size:.88rem;padding:9px 2px;border-bottom:1px solid #e4e4e4;color:var(--muted)}
+  .stat:last-child{border-bottom:0}
+  .stat b{color:var(--ink);font-weight:500}
+  .status-card{background:var(--gray);border-radius:26px;padding:10px 18px}
+
+  /* Heartbeat (blue) */
+  .beat-card{background:var(--blue);border-radius:30px;padding:18px}
+  .bc-top{display:flex;align-items:center;gap:12px}
+  .bc-top .icon-circle{width:52px;height:52px}
+  .bc-top h3{margin:0;font-size:1.2rem;font-weight:500;flex:1}
+  .dots{letter-spacing:2px;color:#3b5a65}
+  .bc-big{font-size:4.4rem;font-weight:400;line-height:1;margin:22px 0 8px;letter-spacing:-.02em}
+  .bc-big small{font-size:.95rem;color:#4b6a75;margin-left:8px;letter-spacing:0}
+  canvas{width:100%;height:190px;display:block}
+  .legend{display:flex;gap:16px;font-size:.78rem;color:#4b6a75;margin-top:8px}
+  .legend i{display:inline-block;width:14px;height:2px;margin-right:6px;vertical-align:middle;background:var(--ink)}
+  .legend i.t{background:#5d7a85}
+
+  /* SpO2 (lilac) */
+  .spo2-card{background:var(--lilac);border-radius:30px;padding:18px}
+  .spo2-card .bc-big small{color:#5b5486}
+  .spo2-card .dots{color:#5b5486}
+  .bar{height:8px;border-radius:99px;background:#ffffffb0;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;width:0;background:var(--ink);border-radius:99px;transition:width .4s}
+  .spo2-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .spo2-foot .tag{margin:0;background:#fff}
+
+  /* Heat stroke */
+  .heat-card{background:#fde9c8;border-radius:30px;padding:18px;transition:background .3s}
+  .heat-card.l0{background:#dff0d4}
+  .heat-card.l1{background:#fbe7a6}
+  .heat-card.l2{background:#f9c6a0}
+  .heat-card.l3{background:#f4a3a3}
+  .heat-card.na{background:#ececec}
+  .heat-lv{font-size:2rem;font-weight:600;margin:18px 0 6px;line-height:1.1}
+  .heat-adv{font-size:.86rem;line-height:1.55;color:#333;min-height:2.6em}
+  .heat-why{font-size:.76rem;color:#555;margin-top:10px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .controls + .controls{margin-top:14px}
+  .sub2{font-size:.8rem;color:var(--muted)}
+  input[type=range]{accent-color:var(--ink);width:140px}
+  .mini h4{margin:0 0 12px;font-size:.9rem;font-weight:500}
+  pre{margin:0;height:130px;overflow:auto;background:#fff;border-radius:16px;padding:12px;font-size:.74rem;color:#444;white-space:pre-wrap;word-break:break-all}
+
+  /* Log panel */
+  .logpanel{margin-top:20px}
+  .logbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .logbar .grow{flex:1}
+  .sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+  .sumgrid .mini{padding:14px 16px}
+  .sumgrid .label{margin-top:0}
+  .tablewrap{max-height:340px;overflow:auto;border-radius:22px;background:var(--gray)}
+  table.logt{width:100%;border-collapse:collapse;font-size:.88rem}
+  table.logt th,table.logt td{padding:10px 16px;text-align:left}
+  table.logt thead th{position:sticky;top:0;background:#e6e6e6;font-weight:500;color:#555}
+  table.logt tbody tr:nth-child(even){background:#fafafa}
+  table.logt td.empty{text-align:center;color:var(--muted);padding:28px}
+
+  /* Heart animation */
+  .heart{display:grid}
+  .heart.beat,.beatsvg.beat{animation:beat var(--bt,0.8s) infinite}
+  .beatsvg{transform-origin:50% 55%}
+  @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.07)}}
+
+  .note{font-size:.78rem;color:var(--muted);margin:18px 6px 0;line-height:1.6}
+
+  /* Printable report (hidden on screen) */
+  #report{display:none}
+  @media print{
+    @page{size:A4;margin:14mm}
+    body{background:#fff}
+    .wrap{display:none!important}
+    #report{display:block;color:#111;font-size:12px;line-height:1.5}
+    #report h1{font-size:20px;margin:0 0 4px}
+    #report .rmeta{color:#555;margin-bottom:12px}
+    #report table{width:100%;border-collapse:collapse;margin:8px 0}
+    #report th,#report td{border:1px solid #ccc;padding:4px 8px;text-align:left}
+    #report th{background:#f0f0f0}
+    #report thead{display:table-header-group}
+    #report tr{page-break-inside:avoid}
+    #report table.rt{font-size:11px}
+    #report svg{width:100%;height:auto;margin:8px 0}
+    #report .rfoot{color:#666;font-size:10px;margin-top:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Hydra20 Health Dashboard</h1>
+      <div class="sub">ESP32-Hydra20 · MAX30102 &amp; GY-906 · Bluetooth Low Energy (BLE)</div>
+    </div>
+    <div class="head-actions">
+      <span class="pill" id="clock"></span>
+      <span class="pill"><span class="dot" id="connDot"></span><span id="connText">ยังไม่เชื่อมต่อ</span></span>
+      <button id="btnConnect">เชื่อมต่อ Bluetooth</button>
+      <button class="alt" id="btnDemo">โหมดสาธิต</button>
+      <button class="ghost" id="btnHot" style="display:none">จำลองภาวะเสี่ยงฮีทสโตรก</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT -->
+    <section class="panel">
+      <div class="health-card">
+        <div class="hc-left">
+          <div>
+            <div class="icon-circle">
+              <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/><path d="M8.5 11.5h2l1-2 1.5 4 1-2h1.5"/></svg>
+            </div>
+            <h2>Health</h2>
+            <p>ข้อมูลล่าสุด<br><span id="age">--</span></p>
+          </div>
+          <span class="outline-pill" id="hrTag">รอข้อมูล</span>
+        </div>
+        <div class="hc-right">
+          <svg class="beatsvg" id="logoHeart" viewBox="0 0 200 210">
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4d4d4"/>
+              </linearGradient>
+            </defs>
+            <rect x="82" y="8" width="22" height="52" rx="11" fill="url(#hg)" stroke="#cfcfcf"/>
+            <rect x="110" y="22" width="20" height="46" rx="10" fill="url(#hg)" stroke="#cfcfcf" transform="rotate(14 120 45)"/>
+            <rect x="56" y="24" width="20" height="46" rx="10" fill="url(#hg)" stroke="#cfcfcf" transform="rotate(-18 66 47)"/>
+            <path d="M100 196C28 146 18 84 60 62c20-10 38 2 40 16 2-14 22-26 42-16 42 22 32 84-42 134z" fill="url(#hg)" stroke="#cfcfcf" stroke-width="1.5"/>
+            <path d="M100 78c-6 30-4 70 0 118" fill="none" stroke="#dcdcdc" stroke-width="1.5"/>
+            <path d="M64 92c10 14 14 38 10 62" fill="none" stroke="#e1e1e1" stroke-width="1.5"/>
+            <g fill="#fff" stroke="#bdbdbd"><circle cx="118" cy="58" r="7"/><circle cx="78" cy="120" r="7"/><circle cx="112" cy="170" r="7"/></g>
+            <g fill="#222"><circle cx="118" cy="58" r="2.2"/><circle cx="78" cy="120" r="2.2"/><circle cx="112" cy="170" r="2.2"/></g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="mini-grid">
+        <div class="mini">
+          <div class="icon-circle">
+            <svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg>
+          </div>
+          <div class="label">อุณหภูมิ (วัตถุ / ผิวหนัง)</div>
+          <div class="val"><span id="temp">--</span><small>°C</small></div>
+          <span class="tag" id="tempTag">รอข้อมูล</span>
+        </div>
+        <div class="mini">
+          <div class="icon-circle">
+            <svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 3-8 2 3h5"/></svg>
+          </div>
+          <div class="label">อุณหภูมิรอบข้าง</div>
+          <div class="val" id="amb">-- °C</div>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <div class="stat"><span>นิ้วบนเซนเซอร์</span><b id="finger">--</b></div>
+        <div class="stat"><span>MAX30102</span><b id="maxS">--</b></div>
+        <div class="stat"><span>GY-906</span><b id="mlxS">--</b></div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="panel">
+      <h2 class="title">Diagnostics</h2>
+
+      <div class="beat-card">
+        <div class="bc-top">
+          <div class="icon-circle heart" id="heart">
+            <svg viewBox="0 0 24 24"><path d="M3 12h3l2.5-6 4 12 2.5-8 1.5 2H21"/></svg>
+          </div>
+          <h3>Heartbeat</h3>
+          <span class="dots">•••</span>
+        </div>
+        <div class="bc-big"><span id="hr">--</span><small>bpm</small></div>
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <span><i></i>อัตราการเต้นหัวใจ (BPM)</span>
+          <span><i class="t"></i>อุณหภูมิ (°C) · 60 วินาทีล่าสุด</span>
+        </div>
+      </div>
+
+      <div class="spo2-card">
+        <div class="bc-top">
+          <div class="icon-circle">
+            <svg viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg>
+          </div>
+          <h3>SpO₂ <span class="sub2">ระดับออกซิเจนในเลือด</span></h3>
+          <span class="dots">•••</span>
+        </div>
+        <div class="bc-big"><span id="spo2">--</span><small>%</small></div>
+        <div class="bar"><i id="spo2Bar"></i></div>
+        <div class="spo2-foot">
+          <span class="tag" id="spo2Tag">รอข้อมูล</span>
+          <span class="sub2">ค่าประมาณ ไม่ใช่เครื่องมือแพทย์</span>
+        </div>
+      </div>
+
+      <div class="heat-card na" id="heatCard">
+        <div class="bc-top">
+          <div class="icon-circle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </div>
+          <h3>Heat stroke <span class="sub2">ประเมินความเสี่ยงฮีทสโตรก</span></h3>
+        </div>
+        <div class="heat-lv" id="heatLv">รอข้อมูล</div>
+        <div class="heat-adv" id="heatAdv">วางนิ้วบนเซนเซอร์เพื่อเริ่มประเมิน</div>
+        <div class="heat-why" id="heatWhy"></div>
+        <div class="spo2-foot"><span class="sub2">ประเมินจากอุณหภูมิผิว + ชีพจร + อากาศ ไม่ใช่การวินิจฉัย</span></div>
+      </div>
+
+      <div class="mini-grid">
+        <div class="mini">
+          <h4>ควบคุม LED</h4>
+          <div class="sub2" style="margin:-4px 0 10px">ไฟติดเฉพาะตอนผิดปกติ: <b id="ledWhy">ปกติ (ไฟดับ)</b></div>
+          <div class="controls">
+            <button id="ledOn">LED ON</button>
+            <button class="alt" id="ledOff">LED OFF</button>
+            <button class="ghost" id="ping">PING</button>
+          </div>
+          <div class="controls">
+            <span class="sub2">ความสว่าง</span>
+            <input type="range" id="bright" min="0" max="255" value="60">
+            <span class="sub2" id="brightV">60</span>
+          </div>
+        </div>
+        <div class="mini">
+          <h4>ข้อความดิบจากอุปกรณ์</h4>
+          <pre id="log">รอข้อมูล...</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- LOG -->
+  <section class="panel logpanel">
+    <h2 class="title">บันทึกข้อมูล</h2>
+    <div class="logbar">
+      <span class="pill"><span class="dot rec" id="recDot"></span><span id="recState">กำลังบันทึกอัตโนมัติ</span></span>
+      <button id="btnRec" class="alt">■ หยุดบันทึก</button>
+      <span class="sub2">ทุก</span>
+      <select id="logInt">
+        <option value="1">1 วินาที</option>
+        <option value="5">5 วินาที</option>
+        <option value="10" selected>10 วินาที</option>
+        <option value="30">30 วินาที</option>
+        <option value="60">1 นาที</option>
+      </select>
+      <span class="grow"></span>
+      <span class="sub2">วันที่</span>
+      <select id="logDate"><option>ยังไม่มีข้อมูล</option></select>
+    </div>
+
+    <div class="sumgrid">
+      <div class="mini"><div class="label">จำนวนรายการ</div><div class="val" id="sCount">0</div></div>
+      <div class="mini"><div class="label">ชีพจรเฉลี่ย (ต่ำสุด–สูงสุด)</div><div class="val"><span id="sHr">--</span><small id="sHrR"></small></div></div>
+      <div class="mini"><div class="label">SpO₂ เฉลี่ย (ต่ำสุด–สูงสุด)</div><div class="val"><span id="sSp">--</span><small id="sSpR"></small></div></div>
+    </div>
+
+    <div class="tablewrap">
+      <table class="logt">
+        <thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ฮีทสโตรก</th></tr></thead>
+        <tbody id="logBody"><tr><td colspan="5" class="empty">ยังไม่มีข้อมูล</td></tr></tbody>
+      </table>
+    </div>
+    <div class="sub2" id="logNote" style="margin:0 6px"></div>
+
+    <div class="logbar">
+      <button id="btnPdf">บันทึกเป็น PDF</button>
+      <button class="alt" id="btnCsv">ดาวน์โหลด CSV</button>
+      <span class="grow"></span>
+      <button class="ghost" id="btnClear">ลบบันทึกของวันที่เลือก</button>
+    </div>
+    <div class="sub2" style="margin:0 6px">กด "บันทึกเป็น PDF" แล้วในหน้าต่างพิมพ์ให้เลือกปลายทางเป็น "บันทึกเป็น PDF" (Save as PDF)</div>
+  </section>
+
+  <p class="note">
+    วิธีใช้: เปิด Bluetooth (และ Location บน Android) → กด "เชื่อมต่อ Bluetooth" แล้วเลือก <b>ESP32-Hydra20</b> จากรายการ (ไม่ต้อง Pair ใน Settings ก่อน)
+    · ใช้ได้กับ Chrome / Edge บนคอมพิวเตอร์และ Android (Web Bluetooth) · iPhone ต้องใช้แอปเบราว์เซอร์ Bluefy
+    · หน้าเว็บต้องเปิดผ่าน HTTPS หรือ localhost หรือเปิดไฟล์โดยตรงบนคอมพิวเตอร์<br>
+    บันทึกข้อมูลเก็บไว้ในเบราว์เซอร์ของเครื่องนี้ (ถ้าล้างข้อมูลเว็บไซต์ของเบราว์เซอร์ บันทึกจะหาย) · ข้อมูลโหมดสาธิตจะไม่ถูกเก็บถาวร
+  </p>
+</div>
+
+<div id="report"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const hist = {hr:[], temp:[]};
+const MAXPTS = 60;
+let lastData=0, demoTimer=null;
+
+/* ---------- Log storage ---------- */
+const LOG_KEY='hydra20_log_v1', LOG_MAX=30000;
+let logs=[], dirty=false, recording=true, lastLogAt=0, selDate=null;
+try{ logs=JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }catch(e){ logs=[]; }
+if(!Array.isArray(logs)) logs=[];
+logs=logs.filter(r=>!r.d);               // ทิ้งข้อมูลสาธิตที่ค้างจากครั้งก่อน
+
+const pad=n=>String(n).padStart(2,'0');
+function dkey(t){ const d=new Date(t); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function tstr(t){ const d=new Date(t); return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+function keyDate(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+function thaiDate(k){ return keyDate(k).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric',weekday:'long'}); }
+function shortThai(k){ return keyDate(k).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'}); }
+
+function saveLogs(){
+  if(!dirty) return;
+  try{ localStorage.setItem(LOG_KEY,JSON.stringify(logs)); dirty=false; }
+  catch(e){
+    logs.splice(0,Math.ceil(logs.length*0.1));        // เต็ม: ตัดข้อมูลเก่าสุด 10%
+    try{ localStorage.setItem(LOG_KEY,JSON.stringify(logs)); dirty=false; }catch(_){}
+  }
+}
+setInterval(saveLogs,10000);
+addEventListener('beforeunload',saveLogs);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveLogs(); });
+
+function maybeLog(hr,spo2,temp,demo,heat){
+  if(!recording) return;
+  if(hr===null && spo2===null) return;
+  const now=Date.now(), iv=(+$('logInt').value)*1000;
+  if(now-lastLogAt<iv) return;
+  lastLogAt=now;
+  logs.push({t:now,h:hr,s:spo2,c:temp,z:heat||0,d:demo?1:0});
+  if(logs.length>LOG_MAX) logs.splice(0,logs.length-LOG_MAX);
+  dirty=true;
+  renderLog();
+}
+
+function stats(arr){
+  const v=arr.filter(x=>x!==null && x!==undefined);
+  if(!v.length) return null;
+  let sum=0,min=v[0],max=v[0];
+  for(const x of v){ sum+=x; if(x<min)min=x; if(x>max)max=x; }
+  return {avg:sum/v.length,min,max};
+}
+function dayRows(){ return selDate ? logs.filter(r=>dkey(r.t)===selDate) : []; }
+const HEAT_SHORT=['ปกติ','เฝ้าระวัง','เสี่ยง','อันตราย'];
+function heatCell(z){ return HEAT_SHORT[z||0]||'ปกติ'; }
+function cell(v,dp){ return (v===null||v===undefined) ? '–' : (dp!==undefined ? v.toFixed(dp) : v); }
+
+function renderLog(){
+  const keys=[...new Set(logs.map(r=>dkey(r.t)))].sort().reverse();
+  const sel=$('logDate');
+  if(!keys.length){
+    sel.innerHTML='<option>ยังไม่มีข้อมูล</option>'; sel.dataset.sig=''; selDate=null;
+  } else {
+    if(!selDate || !keys.includes(selDate)) selDate=keys[0];
+    const sig=keys.join(',');
+    if(sel.dataset.sig!==sig){
+      sel.innerHTML=keys.map(k=>`<option value="${k}">${shortThai(k)}</option>`).join('');
+      sel.dataset.sig=sig;
+    }
+    sel.value=selDate;
+  }
+  const rows=dayRows();
+  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s));
+  $('sCount').textContent=rows.length;
+  $('sHr').textContent=hs?Math.round(hs.avg):'--';
+  $('sHrR').textContent=hs?`(${hs.min}–${hs.max})`:'';
+  $('sSp').textContent=ss?ss.avg.toFixed(1):'--';
+  $('sSpR').textContent=ss?`(${ss.min}–${ss.max})`:'';
+
+  const MAXSHOW=300;
+  const show=rows.slice(-MAXSHOW).reverse();
+  $('logBody').innerHTML = show.length
+    ? show.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.z)}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลในวันที่เลือก</td></tr>';
+  $('logNote').textContent = rows.length>MAXSHOW
+    ? `แสดง ${MAXSHOW} รายการล่าสุดบนหน้าจอ (PDF และ CSV รวมทั้งหมด ${rows.length} รายการของวันนั้น)` : '';
+}
+
+function purgeDemo(){
+  const n=logs.length; logs=logs.filter(r=>!r.d);
+  if(logs.length!==n){ dirty=true; saveLogs(); renderLog(); }
+}
+
+function setRec(on){
+  recording=on;
+  $('btnRec').textContent=on?'■ หยุดบันทึก':'● เริ่มบันทึก';
+  $('recState').textContent=on?'กำลังบันทึกอัตโนมัติ':'หยุดบันทึกอยู่';
+  $('recDot').className='dot'+(on?' rec':'');
+}
+$('btnRec').onclick=()=>setRec(!recording);
+$('logDate').onchange=e=>{ selDate=e.target.value; renderLog(); };
+$('logInt').onchange=()=>{ lastLogAt=0; };
+
+$('btnClear').onclick=()=>{
+  if(!selDate) return;
+  if(!confirm('ลบบันทึกของวันที่ '+thaiDate(selDate)+' ทั้งหมด?')) return;
+  logs=logs.filter(r=>dkey(r.t)!==selDate);
+  dirty=true; saveLogs(); selDate=null; renderLog();
+};
+
+$('btnCsv').onclick=()=>{
+  const rows=dayRows();
+  if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return; }
+  const csv='\ufeffวันที่,เวลา,ชีพจร (bpm),SpO2 (%),อุณหภูมิ (°C),ความเสี่ยงฮีทสโตรก,แหล่งข้อมูล\n'+
+    rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',heatCell(r.z),r.d?'demo':'device'].join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='hydra20-'+selDate+'.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+/* ---------- PDF report (ใช้หน้าต่างพิมพ์ของเบราว์เซอร์ → Save as PDF) ---------- */
+function svgChart(rows){
+  const W=720,H=190,p=30,t0=rows[0].t,span=Math.max(rows[rows.length-1].t-t0,1);
+  const step=Math.max(1,Math.ceil(rows.length/300)), pts=rows.filter((_,i)=>i%step===0);
+  const X=r=>p+(W-2*p)*(r.t-t0)/span;
+  const Y=(v,a,b)=>H-p-(H-2*p)*Math.min(1,Math.max(0,(v-a)/(b-a)));
+  const line=(k,a,b,col)=>{
+    let d='',on=false;
+    pts.forEach(r=>{ const v=r[k]; if(v===null||v===undefined){on=false;return;}
+      d+=(on?'L':'M')+X(r).toFixed(1)+' '+Y(v,a,b).toFixed(1); on=true; });
+    return `<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5"/>`;
+  };
+  let g='';
+  [0,.5,1].forEach(f=>{
+    const y=H-p-(H-2*p)*f;
+    g+=`<line x1="${p}" x2="${W-p}" y1="${y}" y2="${y}" stroke="#ddd"/>`+
+       `<text x="${p-4}" y="${y+3}" font-size="9" text-anchor="end" fill="#c0396b">${40+120*f}</text>`+
+       `<text x="${W-p+4}" y="${y+3}" font-size="9" fill="#4b5fc0">${80+20*f}</text>`;
+  });
+  g+=`<text x="${p}" y="${H-8}" font-size="9" fill="#555">${tstr(rows[0].t)}</text>`+
+     `<text x="${W-p}" y="${H-8}" font-size="9" text-anchor="end" fill="#555">${tstr(rows[rows.length-1].t)}</text>`+
+     `<text x="${W/2-90}" y="12" font-size="10" fill="#c0396b">— ชีพจร (bpm)</text>`+
+     `<text x="${W/2+20}" y="12" font-size="10" fill="#4b5fc0">— SpO₂ (%)</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}">${g}${line('h',40,160,'#e0537f')}${line('s',80,100,'#4b5fc0')}</svg>`;
+}
+
+function buildReport(){
+  const rows=dayRows();
+  if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return false; }
+  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s)), ts=stats(rows.map(r=>r.c));
+  const demo=rows.some(r=>r.d);
+  const body=rows.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.z)}</td></tr>`).join('');
+  const maxHeat=Math.max(...rows.map(r=>r.z||0));
+  $('report').innerHTML=`
+    <h1>รายงานสัญญาณชีพ · Hydra20</h1>
+    <div class="rmeta">
+      วันที่ ${thaiDate(selDate)}<br>
+      ช่วงเวลาบันทึก ${tstr(rows[0].t)} – ${tstr(rows[rows.length-1].t)} · ${rows.length} รายการ<br>
+      อุปกรณ์: ESP32-Hydra20 (MAX30102 / GY-906) · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}
+      ${demo?'<br><b>⚠ รายงานนี้มีข้อมูลสาธิต (จำลอง)</b>':''}
+    </div>
+    <table class="rsum"><thead><tr><th>รายการ</th><th>เฉลี่ย</th><th>ต่ำสุด</th><th>สูงสุด</th></tr></thead><tbody>
+      <tr><td>ชีพจร (bpm)</td><td>${hs?hs.avg.toFixed(0):'–'}</td><td>${hs?hs.min:'–'}</td><td>${hs?hs.max:'–'}</td></tr>
+      <tr><td>SpO₂ (%)</td><td>${ss?ss.avg.toFixed(1):'–'}</td><td>${ss?ss.min:'–'}</td><td>${ss?ss.max:'–'}</td></tr>
+      <tr><td>อุณหภูมิ (°C)</td><td>${ts?ts.avg.toFixed(1):'–'}</td><td>${ts?ts.min.toFixed(1):'–'}</td><td>${ts?ts.max.toFixed(1):'–'}</td></tr>
+      <tr><td>ระดับความเสี่ยงฮีทสโตรกสูงสุด</td><td colspan="3">${heatCell(maxHeat)}</td></tr>
+    </tbody></table>
+    ${svgChart(rows)}
+    <table class="rt"><thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ฮีทสโตรก</th></tr></thead><tbody>${body}</tbody></table>
+    <p class="rfoot">ค่าที่แสดงเป็นค่าประมาณจากเซนเซอร์ MAX30102 / GY-906 ไม่ใช่เครื่องมือแพทย์ ไม่ควรใช้วินิจฉัยหรือตัดสินใจทางการรักษา</p>`;
+  return true;
+}
+
+$('btnPdf').onclick=()=>{
+  if(!buildReport()) return;
+  const old=document.title;
+  document.title='Hydra20-'+selDate;            // ชื่อไฟล์ PDF เริ่มต้น
+  window.onafterprint=()=>{ document.title=old; window.onafterprint=null; };
+  window.print();
+};
+
+/* ---------- Clock ---------- */
+function tickClock(){
+  $('clock').textContent=new Date().toLocaleString('th-TH',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(tickClock,1000); tickClock();
+
+/* ---------- UI ---------- */
+function setConn(state, text){
+  $('connDot').className = 'dot ' + (state==='on'?'on':state==='warn'?'warn':'');
+  $('connText').textContent = text;
+}
+function log(line){
+  const el = $('log');
+  const lines = (el.textContent==='รอข้อมูล...'?[]:el.textContent.split('\n'));
+  lines.push(line); if(lines.length>30) lines.shift();
+  el.textContent = lines.join('\n'); el.scrollTop = el.scrollHeight;
+}
+
+function update(d){
+  lastData = Date.now();
+  const hr = (typeof d.hr==='number') ? d.hr : null;
+  const t = (typeof d.temp==='number') ? d.temp : null;
+  const sp = (typeof d.spo2==='number') ? d.spo2 : null;
+
+  $('hr').textContent = hr!==null ? hr : '--';
+  $('temp').textContent = t!==null ? t.toFixed(1) : '--';
+  $('amb').textContent = (typeof d.ambient==='number') ? d.ambient.toFixed(1)+' °C' : '-- °C';
+  $('finger').textContent = d.finger ? 'มี' : 'ไม่มี';
+  $('maxS').textContent = d.max ? 'ปกติ' : 'ไม่พบ';
+  $('mlxS').textContent = d.mlx ? 'ปกติ' : 'ไม่พบ';
+  if(typeof d.bright==='number'){ $('bright').value=d.bright; $('brightV').textContent=d.bright; }
+
+  // heart animation
+  const h = $('heart'), lh = $('logoHeart');
+  if(hr){ const s=(60/hr).toFixed(2)+'s'; h.style.setProperty('--bt',s); lh.style.setProperty('--bt',s); h.classList.add('beat'); lh.classList.add('beat'); }
+  else { h.classList.remove('beat'); lh.classList.remove('beat'); }
+
+  // tags
+  // สถานะ "ผิดปกติ" มาจากอุปกรณ์ (al) ซึ่งยืนยันแล้วว่าเกินเกณฑ์ต่อเนื่องหลายวินาที
+  // ถ้าเพิ่งเกินเกณฑ์ครั้งสองครั้ง จะแสดงเป็น "กำลังตรวจสอบ" ไม่ตัดสินทันที
+  const al = (typeof d.al==='number') ? d.al : 0;
+  const ht = $('hrTag');
+  if(hr===null){ ht.textContent = d.finger===false ? 'วางนิ้วบนเซนเซอร์' : 'กำลังวัด...'; }
+  else if(al & AL.HR_LOW){ ht.textContent='ต่ำกว่าปกติ (ยืนยันต่อเนื่อง)'; }
+  else if(al & AL.HR_HIGH){ ht.textContent='สูงกว่าปกติ (ยืนยันต่อเนื่อง)'; }
+  else if(hr<TH.HR_LO || hr>TH.HR_HI){ ht.textContent='กำลังตรวจสอบค่าที่ผิดปกติ...'; }
+  else { ht.textContent='อยู่ในเกณฑ์ปกติ'; }
+
+  const tt = $('tempTag');
+  if(t===null) tt.textContent='ไม่มีข้อมูล';
+  else if(t<35) tt.textContent='ต่ำ (อาจวัดที่วัตถุอื่น)';
+  else if(al & AL.TEMP) tt.textContent='สูงกว่าปกติ (ยืนยันต่อเนื่อง)';
+  else if(t>TH.TEMP_HI) tt.textContent='กำลังตรวจสอบค่าที่สูง...';
+  else tt.textContent='ปกติ';
+
+  renderHeat(d, al, hr, t);
+
+  // SpO2
+  $('spo2').textContent = sp!==null ? sp : '--';
+  $('spo2Bar').style.width = sp!==null ? Math.max(0,Math.min(100,(sp-70)/30*100))+'%' : '0%';
+  const st = $('spo2Tag');
+  if(sp===null) st.textContent = d.finger===false ? 'วางนิ้วบนเซนเซอร์' : 'กำลังวัด (นิ่งไว้ ~6 วินาที)';
+  else if(sp>=TH.SPO2_LO) st.textContent='อยู่ในเกณฑ์ปกติ';
+  else if(!(al & AL.SPO2)) st.textContent='กำลังตรวจสอบค่าที่ต่ำ... (นิ่งไว้)';
+  else if(sp>=90) st.textContent='ต่ำกว่าปกติ · ควรวัดซ้ำ';
+  else st.textContent='ต่ำ · ควรวัดซ้ำและปรึกษาแพทย์';
+
+  hist.hr.push(hr); hist.temp.push(t);
+  if(hist.hr.length>MAXPTS){ hist.hr.shift(); hist.temp.shift(); }
+  draw();
+  maybeLog(hr,sp,t,!!demoTimer,(typeof d.hs==='number')?d.hs:0);
+}
+
+/* ---------- Heat stroke + เกณฑ์ (ต้องตรงกับเฟิร์มแวร์) ---------- */
+const AL={HR_LOW:1,HR_HIGH:2,SPO2:4,TEMP:8,HEAT:16};
+const TH={N:5,CLR:3,HR_LO:60,HR_HI:100,SPO2_LO:95,TEMP_HI:37.5,HEAT1:38,HEAT2:39,AMB_HOT:32};
+const HEAT_TXT=[
+  ['ปกติ','ยังไม่พบสัญญาณเสี่ยงฮีทสโตรก'],
+  ['เฝ้าระวัง','ร่างกายเริ่มร้อน/อากาศร้อน ควรพักในที่ร่ม ดื่มน้ำ และวัดซ้ำ'],
+  ['เสี่ยงฮีทสโตรก','ย้ายเข้าที่เย็น/ร่ม คลายเสื้อผ้า ประคบเย็นที่ลำคอ-รักแร้-ขาหนีบ ดื่มน้ำ หากสับสน ซึม หรือเป็นลม โทร 1669'],
+  ['อันตราย · โทร 1669','อุณหภูมิสูงมากร่วมกับชีพจรเร็ว ควรโทร 1669 ทันที ระหว่างรอให้ลดอุณหภูมิร่างกายด้วยการประคบเย็น']
+];
+function renderHeat(d, al, hr, t){
+  const card=$('heatCard'), lv=$('heatLv'), adv=$('heatAdv'), why=$('heatWhy');
+  if(d.finger===false || (hr===null && t===null)){
+    card.className='heat-card na'; lv.textContent='รอข้อมูล';
+    adv.textContent='วางนิ้วบนเซนเซอร์เพื่อเริ่มประเมิน'; why.textContent='';
+  } else {
+    const h=Math.max(0,Math.min(3,(typeof d.hs==='number')?d.hs:0));
+    card.className='heat-card l'+h; lv.textContent=HEAT_TXT[h][0]; adv.textContent=HEAT_TXT[h][1];
+    const r=[];
+    if(t!==null) r.push('อุณหภูมิ '+t.toFixed(1)+'°C');
+    if(hr!==null) r.push('ชีพจร '+hr+' bpm');
+    if(typeof d.ambient==='number') r.push('อากาศ '+d.ambient.toFixed(1)+'°C');
+    why.textContent='ปัจจัย: '+r.join(' · ');
+  }
+  // สาเหตุที่ไฟ LED ติด
+  const n=[];
+  if(d.finger!==false){
+    if(al & AL.HEAT) n.push('เสี่ยงฮีทสโตรก');
+    if(al & AL.SPO2) n.push('SpO₂ ผิดปกติ');
+    if(al & AL.TEMP) n.push('อุณหภูมิสูง');
+    if(al & (AL.HR_LOW|AL.HR_HIGH)) n.push('ชีพจรผิดปกติ');
+  }
+  $('ledWhy').textContent = n.length ? n.join(' + ')+' (ไฟติด)' : 'ปกติ (ไฟดับ)';
+}
+
+/* ตัวประเมินฝั่งเว็บ ใช้เฉพาะโหมดสาธิต (ของจริงใช้ค่า al/hs ที่อุปกรณ์ส่งมา) */
+const dLat={};
+function dLatch(k,cond,valid){
+  const l=dLat[k]||(dLat[k]={up:0,down:0,on:false});
+  if(!valid){ l.up=l.down=0; l.on=false; return false; }
+  if(cond){ l.down=0; l.up++; if(l.up>=TH.N) l.on=true; }
+  else { l.up=0; l.down++; if(l.down>=TH.CLR) l.on=false; }
+  return l.on;
+}
+function demoAssess(d){
+  const f=d.finger;
+  const hrLow=dLatch('hl',d.hr<TH.HR_LO,f), hrHigh=dLatch('hh',d.hr>TH.HR_HI,f);
+  const sp=dLatch('sp',d.spo2<TH.SPO2_LO,f), tH=dLatch('t',d.temp>TH.TEMP_HI,f);
+  const h1=dLatch('h1',d.temp>=TH.HEAT1,f), h2=dLatch('h2',d.temp>=TH.HEAT2,f);
+  const amb=dLatch('am',d.ambient>=TH.AMB_HOT,true);
+  let hs=0;
+  if(h2&&hrHigh) hs=3;
+  else if(h2||(h1&&hrHigh)||(tH&&hrHigh&&amb)) hs=2;
+  else if(h1||(tH&&hrHigh)||(amb&&(tH||hrHigh))) hs=1;
+  let al=0;
+  if(hrLow) al|=AL.HR_LOW; if(hrHigh) al|=AL.HR_HIGH; if(sp) al|=AL.SPO2; if(tH) al|=AL.TEMP; if(hs>=2) al|=AL.HEAT;
+  return {al,hs};
+}
+
+setInterval(()=>{
+  if(!lastData){ return; }
+  const s = Math.floor((Date.now()-lastData)/1000);
+  $('age').textContent = s+' วินาทีที่แล้ว';
+  if(isConn() && s>3) setConn('warn','เชื่อมต่ออยู่ แต่ไม่มีข้อมูล');
+  else if(isConn()) setConn('on','เชื่อมต่อแล้ว');
+},1000);
+
+/* ---------- Chart ---------- */
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function draw(){
+  const c=$('chart'), ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=c.clientWidth, H=c.clientHeight;
+  if(!W) return;
+  if(c.width!==Math.round(W*dpr) || c.height!==Math.round(H*dpr)){
+    c.width=Math.round(W*dpr); c.height=Math.round(H*dpr);
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const pad=6, xAt=i=>pad+(W-2*pad)*i/(MAXPTS-1);
+  const n=hist.hr.length;
+  let last=-1; hist.hr.forEach((v,i)=>{ if(v!==null && v!==undefined) last=i; });
+  const hasData = n>0;
+  const cx = hasData ? xAt(last>=0?last:n-1) : W/2;
+
+  // highlight band + dashed line + bubble
+  const bw=90, bx=Math.min(Math.max(cx-bw/2,0),W-bw);
+  ctx.fillStyle='rgba(255,255,255,.45)';
+  rr(ctx,bx,30,bw,H-30,14); ctx.fill();
+  ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle='#111'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx,26); ctx.lineTo(cx,H); ctx.stroke(); ctx.restore();
+
+  const hrVal = last>=0 ? hist.hr[last] : null;
+  const label = (hrVal!==null ? hrVal : '--')+' bpm';
+  ctx.font='12px Prompt, sans-serif';
+  const bwid=ctx.measureText(label).width+22, bxx=Math.min(Math.max(cx-bwid/2,0),W-bwid);
+  ctx.fillStyle='#fff'; ctx.strokeStyle='#222'; ctx.lineWidth=1;
+  rr(ctx,bxx,2,bwid,24,12); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#111'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label,bxx+bwid/2,14);
+
+  // series
+  const series=[
+    {data:hist.hr,   min:40, max:160, color:'#111',    w:1.6, y0:46,      y1:H*0.62},
+    {data:hist.temp, min:30, max:42,  color:'#5d7a85', w:1.2, y0:H*0.72,  y1:H-10}
+  ];
+  series.forEach(s=>{
+    ctx.strokeStyle=s.color; ctx.lineWidth=s.w; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath(); let started=false;
+    if(!s.data.length){
+      const y=(s.y0+s.y1)/2; ctx.moveTo(pad,y); ctx.lineTo(W-pad,y);
+    } else {
+      s.data.forEach((v,i)=>{
+        if(v===null||v===undefined){ started=false; return; }
+        const x=xAt(i);
+        const k=Math.min(1,Math.max(0,(v-s.min)/(s.max-s.min)));
+        const y=s.y1-(s.y1-s.y0)*k;
+        if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+      });
+    }
+    ctx.stroke();
+  });
+}
+draw();
+window.addEventListener('resize',draw);
+
+/* ---------- Bluetooth Low Energy (Nordic UART Service) ---------- */
+const NUS_SERVICE='6e400001-b5a5-f393-e0a9-e50e24dcca9e';
+const NUS_RX='6e400002-b5a5-f393-e0a9-e50e24dcca9e';   // เว็บ → ESP32 (write)
+const NUS_TX='6e400003-b5a5-f393-e0a9-e50e24dcca9e';   // ESP32 → เว็บ (notify)
+let bleDev=null, rxChar=null, txChar=null, rxBuf='', userDisc=false, writeChain=Promise.resolve();
+const bleDec=new TextDecoder(), bleEnc=new TextEncoder();
+
+function isConn(){ return !!(bleDev && bleDev.gatt && bleDev.gatt.connected); }
+
+async function setupGatt(){
+  const server=await bleDev.gatt.connect();
+  const svc=await server.getPrimaryService(NUS_SERVICE);
+  rxChar=await svc.getCharacteristic(NUS_RX);
+  txChar=await svc.getCharacteristic(NUS_TX);
+  txChar.addEventListener('characteristicvaluechanged',onBleData);
+  await txChar.startNotifications();
+  rxBuf='';
+}
+
+async function connect(){
+  if(!navigator.bluetooth){
+    alert('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth กรุณาใช้ Chrome หรือ Edge (คอมพิวเตอร์ / Android) หรือแอป Bluefy บน iPhone');
+    return;
+  }
+  stopDemo(); userDisc=false;
+  try{
+    bleDev=await navigator.bluetooth.requestDevice({
+      filters:[{services:[NUS_SERVICE]},{namePrefix:'ESP32-Hydra20'}],
+      optionalServices:[NUS_SERVICE]
+    });
+    bleDev.addEventListener('gattserverdisconnected',onBleDisc);
+    setConn('warn','กำลังเชื่อมต่อ...');
+    await setupGatt();
+  }catch(e){ log('เชื่อมต่อไม่สำเร็จ: '+e.message); finishDisc(); return; }
+  setConn('warn','เชื่อมต่อแล้ว รอข้อมูล...');
+  $('btnConnect').textContent='ตัดการเชื่อมต่อ';
+}
+
+function onBleData(e){
+  rxBuf+=bleDec.decode(e.target.value,{stream:true});
+  let i;
+  while((i=rxBuf.indexOf('\n'))>=0){
+    const line=rxBuf.slice(0,i).trim(); rxBuf=rxBuf.slice(i+1);
+    if(line) handleLine(line);
+  }
+  if(rxBuf.length>2000) rxBuf='';
+}
+
+function handleLine(line){
+  log(line);
+  try{
+    const d = JSON.parse(line);
+    if('hr' in d || 'temp' in d) update(d);
+  }catch(e){ /* ข้ามบรรทัดที่ไม่ใช่ JSON */ }
+}
+
+function finishDisc(){
+  const d=bleDev; bleDev=null; rxChar=null; txChar=null;
+  try{ if(d && d.gatt && d.gatt.connected) d.gatt.disconnect(); }catch(e){}
+  setConn('', 'ยังไม่เชื่อมต่อ');
+  $('btnConnect').textContent='เชื่อมต่อ Bluetooth';
+}
+
+function onBleDisc(){
+  rxChar=null; txChar=null;
+  if(userDisc || !bleDev){ finishDisc(); return; }
+  log('อุปกรณ์หลุดการเชื่อมต่อ กำลังลองต่อใหม่...');
+  setConn('warn','หลุดการเชื่อมต่อ กำลังต่อใหม่...');
+  tryReconnect(1);
+}
+
+async function tryReconnect(n){
+  if(userDisc || !bleDev) return;
+  try{
+    await setupGatt();
+    setConn('warn','เชื่อมต่อแล้ว รอข้อมูล...');
+    log('ต่อใหม่สำเร็จ');
+  }catch(e){
+    if(n>=8){ log('ต่อใหม่ไม่สำเร็จ'); finishDisc(); return; }
+    setTimeout(()=>tryReconnect(n+1),2000);
+  }
+}
+
+function disconnect(){ userDisc=true; finishDisc(); }
+
+function send(cmd){
+  if(demoTimer){ log('[demo] > '+cmd); return; }
+  if(!rxChar){ log('ยังไม่ได้เชื่อมต่ออุปกรณ์'); return; }
+  const ch=rxChar, data=bleEnc.encode(cmd+'\n');
+  // เขียนทีละคำสั่ง (GATT ไม่รับหลายคำสั่งพร้อมกัน)
+  writeChain=writeChain
+    .then(()=> ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(data) : ch.writeValue(data))
+    .then(()=>log('> '+cmd))
+    .catch(e=>log('ส่งคำสั่งไม่สำเร็จ: '+e.message));
+}
+
+$('btnConnect').onclick = ()=> bleDev ? disconnect() : connect();
+$('ledOn').onclick  = ()=>send('LED ON');
+$('ledOff').onclick = ()=>send('LED OFF');
+$('ping').onclick   = ()=>send('PING');
+let bt=null;
+$('bright').oninput = e=>{
+  $('brightV').textContent=e.target.value;
+  clearTimeout(bt); bt=setTimeout(()=>send('BRIGHT '+e.target.value),200);
+};
+
+/* ---------- Demo ---------- */
+let demoHot=false;
+function stopDemo(){
+  if(demoTimer){
+    clearInterval(demoTimer); demoTimer=null; $('btnDemo').textContent='โหมดสาธิต'; purgeDemo();
+    demoHot=false; $('btnHot').style.display='none'; $('btnHot').textContent='จำลองภาวะเสี่ยงฮีทสโตรก';
+    for(const k in dLat) delete dLat[k];
+  }
+}
+$('btnHot').onclick=()=>{
+  demoHot=!demoHot;
+  $('btnHot').textContent=demoHot?'กลับสู่ค่าปกติ':'จำลองภาวะเสี่ยงฮีทสโตรก';
+};
+$('btnDemo').onclick = ()=>{
+  if(demoTimer){ stopDemo(); setConn('', 'ยังไม่เชื่อมต่อ'); return; }
+  if(bleDev) disconnect();
+  $('btnDemo').textContent='หยุดสาธิต'; $('btnHot').style.display='';
+  setConn('warn','โหมดสาธิต (ข้อมูลจำลอง)');
+  let t=0;
+  demoTimer=setInterval(()=>{
+    t++;
+    const d = demoHot
+      ? {hr:Math.round(122+6*Math.sin(t/5)+Math.random()*3),
+         spo2:Math.round(96+Math.random()),
+         temp:+(38.6+0.2*Math.sin(t/10)+Math.random()*0.1).toFixed(2),
+         ambient:+(34+Math.random()*0.3).toFixed(2),
+         finger:true,max:true,mlx:true}
+      : {hr:Math.round(74+8*Math.sin(t/6)+Math.random()*3),
+         spo2:Math.round(97+1.2*Math.sin(t/9)+Math.random()),
+         temp:+(36.4+0.4*Math.sin(t/15)+Math.random()*0.1).toFixed(2),
+         ambient:+(29.5+Math.random()*0.3).toFixed(2),
+         finger:true,max:true,mlx:true};
+    Object.assign(d, demoAssess(d));
+    update(d);
+  },1000);
+};
+
+renderLog();
+</script>
+</body>
+</html>
