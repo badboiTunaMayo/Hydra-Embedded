@@ -66,7 +66,8 @@
 #define LED_PIN          5
 #define LED_COUNT        8          // จำนวนดวง LED บนโมดูล (แก้ให้ตรงกับของจริง)
 #define SEND_INTERVAL_MS 1000
-#define FINGER_IR_MIN    30000      // ค่า IR ต่ำกว่านี้ = ไม่มีนิ้ววาง
+#define FINGER_IR_ON     70000      // IR สูงกว่านี้ = มีนิ้ววาง (ต้องแตะจริง ไม่ใช่แค่ลอยใกล้ ๆ)
+#define FINGER_IR_OFF    50000      // IR ต่ำกว่านี้ = นิ้วออก (ต่ำกว่าค่า ON เพื่อกันสถานะกระพริบ)
 #define TEMP_OFFSET_C    0.0f       // ชดเชยอุณหภูมิ (ถ้าต้องการสอบเทียบ)
 #define SENSOR_RETRY_MS  5000
 
@@ -77,6 +78,15 @@
 #define BLE_CHUNK        20         // ขนาดต่อชิ้น (MTU ขั้นต่ำ 23 - 3)
 #define BLE_TX_GAP_MS    10         // เว้นระยะระหว่างชิ้น กัน notify ล้นคิว
 #define BLE_TX_MAX       700        // คิวส่งสูงสุด (ไบต์) เกินนี้ทิ้งข้อมูลใหม่
+
+// ตัวตรวจจับชีพจร
+#define HR_SAMPLE_MS     10         // 1 ตัวอย่าง = 10 ms (400 sps / เฉลี่ย 4 = 100 sps) ถ้าแก้ setup() ต้องแก้ตรงนี้ด้วย
+#define HR_DC_ALPHA      0.02f      // ตัวกรอง DC (ตัดฐานสัญญาณ)
+#define HR_LP_ALPHA      0.25f      // ตัวกรองความถี่ต่ำ ลดสัญญาณรบกวน
+#define HR_ENV_DECAY     0.995f     // ซองสัญญาณลดลงต่อตัวอย่าง (~60% ต่อวินาที)
+#define HR_MIN_AMP       20.0f      // แอมพลิจูดต่ำสุดที่นับเป็นจังหวะ (เพิ่มถ้ามีจังหวะปลอมเยอะ)
+#define HR_REFRACT_MS    300        // ห้ามนับจังหวะถี่กว่านี้ (= 200 bpm)
+#define HR_TIMEOUT_MS    4000       // ไม่มีจังหวะนานกว่านี้ = ล้างค่า HR เป็น null
 
 // SpO2
 #define SPO2_WINDOW      300        // ตัวอย่างต่อหนึ่งรอบคำนวณ (~3 วินาทีที่ 100 sps)
@@ -107,6 +117,7 @@ const byte RATE_SIZE = 4;
 byte rates[RATE_SIZE];
 byte rateSpot = 0;
 unsigned long lastBeat = 0;
+unsigned long lastBeatWall = 0;   // millis() ตอนได้จังหวะที่ใช้ได้ล่าสุด (ไว้ตรวจ timeout)
 float beatsPerMinute = 0;
 int beatAvg = 0;
 bool fingerOn = false;
@@ -431,6 +442,73 @@ void processSpo2(long red, long ir) {
   }
 }
 
+// ---------- ตรวจจับจังหวะหัวใจ (แทน checkForBeat ที่ค้างได้) ----------
+// ทำงานต่อ 1 ตัวอย่าง IR ที่ ~100 sps (400 / เฉลี่ย 4)
+// เวลาคิดจากจำนวนตัวอย่าง ไม่ใช่ millis() เพราะ FIFO ถูกอ่านเป็นก้อน ทำให้ millis() เหลื่อมกัน
+float hrDc = 0, hrLp = 0, hrPrev1 = 0, hrPrev2 = 0, hrEnv = 0;
+unsigned long hrClock = 0;              // เวลาจากตัวอย่าง (ms)
+unsigned long hrLastPeak = 0;           // เวลาของพีคล่าสุด (ms ตามนาฬิกาตัวอย่าง)
+byte hrRejects = 0;                     // จำนวนช่วงที่ถูกปัดทิ้งติดกัน
+
+void resetHr() {
+  beatAvg = 0; rateSpot = 0; lastBeat = 0; lastBeatWall = 0; hrRejects = 0;
+  for (byte i = 0; i < RATE_SIZE; i++) rates[i] = 0;
+  hrDc = hrLp = hrPrev1 = hrPrev2 = hrEnv = 0;
+  hrLastPeak = 0;
+}
+
+void addBeat(float bpm) {
+  rates[rateSpot++] = (byte)bpm;
+  rateSpot %= RATE_SIZE;
+  int sum = 0, n = 0;
+  for (byte i = 0; i < RATE_SIZE; i++) if (rates[i]) { sum += rates[i]; n++; }
+  if (n) beatAvg = sum / n;
+}
+
+void processHr(long ir) {
+  hrClock += HR_SAMPLE_MS;
+  if (hrDc == 0) hrDc = (float)ir;
+  hrDc += HR_DC_ALPHA * ((float)ir - hrDc);
+  float ac = hrDc - (float)ir;                 // กลับขั้ว: เลือดมาก = ค่าบวก
+  hrLp += HR_LP_ALPHA * (ac - hrLp);           // กรองความถี่สูงออก (~4 Hz)
+
+  // ซองสัญญาณ (ค่ายอดที่ค่อย ๆ ลดลง) ใช้ปรับเกณฑ์ตามแอมพลิจูดจริง ไม่ค้างที่ค่าเก่า
+  hrEnv = (hrLp > hrEnv) ? hrLp : hrEnv * HR_ENV_DECAY;
+  float thr = hrEnv * 0.5f;
+  if (thr < HR_MIN_AMP) thr = HR_MIN_AMP;
+
+  // พีค = จุดที่ค่าก่อนหน้าสูงกว่าทั้งสองข้าง และเกินเกณฑ์
+  bool peak = (hrPrev1 > hrPrev2) && (hrPrev1 >= hrLp) && (hrPrev1 > thr);
+  hrPrev2 = hrPrev1;
+  hrPrev1 = hrLp;
+  if (!peak) return;
+
+  unsigned long t = hrClock;
+  if (hrLastPeak != 0) {
+    unsigned long delta = t - hrLastPeak;
+    if (delta < HR_REFRACT_MS) return;         // ใกล้เกินไป = พีคซ้อน (dicrotic) ข้ามไป
+    float bpm = 60000.0f / (float)delta;
+    bool inRange = (bpm >= 30.0f && bpm <= 220.0f);
+    bool consistent = (beatAvg == 0) || (fabsf(bpm - beatAvg) <= beatAvg * 0.35f);
+    if (inRange && (consistent || hrRejects >= 2)) {
+      if (!consistent) {                       // ปัดทิ้งติดกัน 3 ครั้ง = ชีพจรเปลี่ยนจริง เริ่มเฉลี่ยใหม่
+        for (byte i = 0; i < RATE_SIZE; i++) rates[i] = 0;
+        rateSpot = 0;
+      }
+      hrRejects = 0;
+      addBeat(bpm);
+      lastBeatWall = millis();
+    } else {
+      hrRejects++;                             // ช่วงผิดปกติ (ขยับ/พลาดจังหวะ) ไม่นำมาเฉลี่ย
+    }
+  } else {
+    lastBeatWall = millis();                   // พีคแรกหลังวางนิ้ว เริ่มจับเวลา timeout
+  }
+  hrLastPeak = t;
+  lastBeat = t;
+  beatFlashUntil = millis() + 120;
+}
+
 // ---------- อ่าน MAX30102 แบบไม่บล็อก ----------
 void readHeart() {
   if (!maxOk) return;
@@ -442,33 +520,19 @@ void readHeart() {
     particleSensor.nextSample();
     lastIr = ir;
 
-    fingerOn = (ir > FINGER_IR_MIN);
+    fingerOn = fingerOn ? (ir > FINGER_IR_OFF) : (ir > FINGER_IR_ON);
     if (!fingerOn) {
-      beatAvg = 0; rateSpot = 0; lastBeat = 0;
-      for (byte i = 0; i < RATE_SIZE; i++) rates[i] = 0;
+      resetHr();
       resetSpo2();
       continue;
     }
 
     processSpo2(red, ir);
-
-    if (checkForBeat(ir)) {
-      unsigned long now = millis();
-      if (lastBeat != 0) {
-        unsigned long delta = now - lastBeat;
-        beatsPerMinute = 60000.0f / delta;
-        if (beatsPerMinute > 30 && beatsPerMinute < 220) {
-          rates[rateSpot++] = (byte)beatsPerMinute;
-          rateSpot %= RATE_SIZE;
-          int sum = 0, n = 0;
-          for (byte i = 0; i < RATE_SIZE; i++) if (rates[i]) { sum += rates[i]; n++; }
-          if (n) beatAvg = sum / n;
-        }
-      }
-      lastBeat = now;
-      beatFlashUntil = now + 120;
-    }
+    processHr(ir);
   }
+
+  // ชีพจรไม่มีจังหวะใหม่นานเกินกำหนด -> ล้างค่า (กันค่าค้างจากจังหวะสุดท้าย)
+  if (beatAvg > 0 && millis() - lastBeatWall > HR_TIMEOUT_MS) resetHr();
 }
 
 // ---------- อ่านอุณหภูมิ (ทุก 1 วินาที) ----------
