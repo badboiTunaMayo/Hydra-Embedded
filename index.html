@@ -271,7 +271,7 @@
     .sumgrid{grid-template-columns:1fr 1fr;gap:10px}
     .sumgrid .mini{padding:12px}
     .tablewrap{max-height:300px;border-radius:18px}
-    table.logt{font-size:.8rem;min-width:420px}
+    table.logt{font-size:.8rem;min-width:500px}
     table.logt th,table.logt td{padding:8px 10px;white-space:nowrap}
     .note{font-size:.72rem}
   }
@@ -480,8 +480,8 @@
 
     <div class="tablewrap">
       <table class="logt">
-        <thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ฮีทสโตรก</th></tr></thead>
-        <tbody id="logBody"><tr><td colspan="5" class="empty">ยังไม่มีข้อมูล</td></tr></tbody>
+        <thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ความชื้น (%)</th><th>ฮีทสโตรก</th></tr></thead>
+        <tbody id="logBody"><tr><td colspan="6" class="empty">ยังไม่มีข้อมูล</td></tr></tbody>
       </table>
     </div>
     <div class="sub2" id="logNote" style="margin:0 6px"></div>
@@ -580,13 +580,13 @@ function renderHeat(hr,sp,t,amb){
   return r.level;
 }
 
-function maybeLog(hr,spo2,temp,demo,heat){
+function maybeLog(hr,spo2,temp,demo,heat,hum){
   if(!recording) return;
   if(hr===null && spo2===null) return;
   const now=Date.now(), iv=(+$('logInt').value)*1000;
   if(now-lastLogAt<iv) return;
   lastLogAt=now;
-  logs.push({t:now,h:hr,s:spo2,c:temp,k:(temp===null?null:heat),d:demo?1:0});
+  logs.push({t:now,h:hr,s:spo2,c:temp,u:(hum===undefined?null:hum),k:(temp===null?null:heat),d:demo?1:0});
   if(logs.length>LOG_MAX) logs.splice(0,logs.length-LOG_MAX);
   dirty=true;
   renderLog();
@@ -629,8 +629,8 @@ function renderLog(){
   const MAXSHOW=300;
   const show=rows.slice(-MAXSHOW).reverse();
   $('logBody').innerHTML = show.length
-    ? show.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('')
-    : '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลในวันที่เลือก</td></tr>';
+    ? show.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${cell(r.u,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="empty">ยังไม่มีข้อมูลในวันที่เลือก</td></tr>';
   $('logNote').textContent = rows.length>MAXSHOW
     ? `แสดง ${MAXSHOW} รายการล่าสุดบนหน้าจอ (PDF และ CSV รวมทั้งหมด ${rows.length} รายการของวันนั้น)` : '';
 }
@@ -660,8 +660,8 @@ $('btnClear').onclick=()=>{
 $('btnCsv').onclick=()=>{
   const rows=dayRows();
   if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return; }
-  const csv='\ufeffวันที่,เวลา,ชีพจร (bpm),SpO2 (%),อุณหภูมิ (°C),ความเสี่ยงฮีทสโตรก,แหล่งข้อมูล\n'+
-    rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',
+  const csv='\ufeffวันที่,เวลา,ชีพจร (bpm),SpO2 (%),อุณหภูมิ (°C),ความชื้นสัมพัทธ์ (%),ความเสี่ยงฮีทสโตรก,แหล่งข้อมูล\n'+
+    rows.map(r=>[dkey(r.t),tstr(r.t),r.h??'',r.s??'',r.c!=null?r.c.toFixed(2):'',r.u!=null?r.u.toFixed(1):'',
       (r.k!=null?HEAT_NAMES[r.k]:''),r.d?'demo':'device'].join(',')).join('\n');
   saveFile('hydra20-'+selDate+'.csv', csv, 'text/csv;charset=utf-8');
 };
@@ -718,9 +718,9 @@ function svgChart(rows){
 function buildReport(){
   const rows=dayRows();
   if(!rows.length){ alert('ไม่มีข้อมูลในวันที่เลือก'); return false; }
-  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s)), ts=stats(rows.map(r=>r.c)), ks=stats(rows.map(r=>r.k));
+  const hs=stats(rows.map(r=>r.h)), ss=stats(rows.map(r=>r.s)), ts=stats(rows.map(r=>r.c)), us=stats(rows.map(r=>r.u)), ks=stats(rows.map(r=>r.k));
   const demo=rows.some(r=>r.d);
-  const body=rows.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('');
+  const body=rows.map(r=>`<tr><td>${tstr(r.t)}</td><td>${cell(r.h)}</td><td>${cell(r.s)}</td><td>${cell(r.c,1)}</td><td>${cell(r.u,1)}</td><td>${heatCell(r.k)}</td></tr>`).join('');
   $('report').innerHTML=`
     <h1>รายงานสัญญาณชีพ · Hydra20</h1>
     <div class="rmeta">
@@ -733,11 +733,12 @@ function buildReport(){
       <tr><td>ชีพจร (bpm)</td><td>${hs?hs.avg.toFixed(0):'–'}</td><td>${hs?hs.min:'–'}</td><td>${hs?hs.max:'–'}</td></tr>
       <tr><td>SpO₂ (%)</td><td>${ss?ss.avg.toFixed(1):'–'}</td><td>${ss?ss.min:'–'}</td><td>${ss?ss.max:'–'}</td></tr>
       <tr><td>อุณหภูมิ (°C)</td><td>${ts?ts.avg.toFixed(1):'–'}</td><td>${ts?ts.min.toFixed(1):'–'}</td><td>${ts?ts.max.toFixed(1):'–'}</td></tr>
+      <tr><td>ความชื้นสัมพัทธ์ (%)</td><td>${us?us.avg.toFixed(1):'–'}</td><td>${us?us.min.toFixed(1):'–'}</td><td>${us?us.max.toFixed(1):'–'}</td></tr>
     </tbody></table>
     <p><b>ความเสี่ยงฮีทสโตรกสูงสุดของวัน:</b> ${ks?HEAT_NAMES[ks.max]:'–'}
       ${ks&&ks.max>=1?` · พบ ${rows.filter(r=>r.k>=1).length} รายการที่ระดับเฝ้าระวังขึ้นไป`:''}</p>
     ${svgChart(rows)}
-    <table class="rt"><thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ฮีทสโตรก</th></tr></thead><tbody>${body}</tbody></table>
+    <table class="rt"><thead><tr><th>เวลา</th><th>ชีพจร (bpm)</th><th>SpO₂ (%)</th><th>อุณหภูมิ (°C)</th><th>ความชื้น (%)</th><th>ฮีทสโตรก</th></tr></thead><tbody>${body}</tbody></table>
     <p class="rfoot">ค่าที่แสดงเป็นค่าประมาณจากเซนเซอร์ MAX30102 / GY-906 ไม่ใช่เครื่องมือแพทย์ ไม่ควรใช้วินิจฉัยหรือตัดสินใจทางการรักษา</p>`;
   return true;
 }
@@ -845,7 +846,7 @@ function update(d){
   draw();
   const amb = (typeof d.ambient==='number') ? d.ambient : null;
   const heat = renderHeat(hr,sp,t,amb);
-  maybeLog(hr,sp,t,!!demoTimer,heat);
+  maybeLog(hr,sp,t,!!demoTimer,heat,(typeof d.hum==='number')?d.hum:null);
 }
 
 setInterval(()=>{
