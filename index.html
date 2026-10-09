@@ -179,6 +179,7 @@
   input[type=range]{accent-color:var(--ink);width:140px}
   .g-ctrl .mini{background:#EEEDEB}
   .mini h4{margin:0 0 12px;font-size:.9rem;font-weight:500}
+  .mini.hum-card{background:#CFE2FF}
   pre{margin:0;height:130px;overflow:auto;background:var(--paper);border-radius:16px;padding:12px;font-size:.74rem;color:var(--ink);white-space:pre-wrap;word-break:break-all}
 
   /* Log panel */
@@ -414,12 +415,12 @@
           <div class="val"><span id="temp">--</span><small>°C</small></div>
           <span class="tag" id="tempTag">รอข้อมูล</span>
         </div>
-        <div class="mini">
+        <div class="mini hum-card">
           <div class="icon-circle">
-            <svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 3-8 2 3h5"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg>
           </div>
-          <div class="label">อุณหภูมิรอบข้าง</div>
-          <div class="val" id="amb">-- °C</div>
+          <div class="label">ความชื้นสัมพัทธ์</div>
+          <div class="val" id="hum">-- %</div>
         </div>
       </div>
       <div class="status-card">
@@ -444,19 +445,6 @@
         </div>
       </div></div>
     <div class="g-ctrl"><div class="mini-grid">
-        <div class="mini">
-          <h4>ควบคุม LED</h4>
-          <div class="controls">
-            <button id="ledOn">LED ON</button>
-            <button class="alt" id="ledOff">LED OFF</button>
-            <button class="ghost" id="ping">PING</button>
-          </div>
-          <div class="controls">
-            <span class="sub2">ความสว่าง</span>
-            <input type="range" id="bright" min="0" max="255" value="60">
-            <span class="sub2" id="brightV">60</span>
-          </div>
-        </div>
         <div class="mini">
           <h4>ข้อความดิบจากอุปกรณ์</h4>
           <pre id="log">รอข้อมูล...</pre>
@@ -814,11 +802,10 @@ function update(d){
   $('hr2').textContent = hr!==null ? hr : '--';
   setLive(true);
   $('temp').textContent = t!==null ? t.toFixed(1) : '--';
-  $('amb').textContent = (typeof d.ambient==='number') ? d.ambient.toFixed(1)+' °C' : '-- °C';
+  $('hum').textContent = (typeof d.hum==='number') ? d.hum.toFixed(1)+' %' : '-- %';
   $('finger').textContent = d.finger ? 'มี' : 'ไม่มี';
   $('maxS').textContent = d.max ? 'ปกติ' : 'ไม่พบ';
   $('mlxS').textContent = d.mlx ? 'ปกติ' : 'ไม่พบ';
-  if(typeof d.bright==='number'){ $('bright').value=d.bright; $('brightV').textContent=d.bright; }
 
   // heart animation
   const h = $('heart'), lh = $('logoHeart');
@@ -1021,14 +1008,6 @@ function send(cmd){
 }
 
 $('btnConnect').onclick = ()=> bleDev ? disconnect() : connect();
-$('ledOn').onclick  = ()=>send('LED ON');
-$('ledOff').onclick = ()=>send('LED OFF');
-$('ping').onclick   = ()=>send('PING');
-let bt=null;
-$('bright').oninput = e=>{
-  $('brightV').textContent=e.target.value;
-  clearTimeout(bt); bt=setTimeout(()=>send('BRIGHT '+e.target.value),200);
-};
 
 /* ---------- Demo ---------- */
 function stopDemo(){
@@ -1047,6 +1026,7 @@ $('btnDemo').onclick = ()=>{
             spo2:Math.round(97+1.2*Math.sin(t/9)+Math.random()),
             temp:+(36.4+0.4*Math.sin(t/15)+Math.random()*0.1+(hot?2:0)).toFixed(2),
             ambient:+(29.5+Math.random()*0.3+(hot?6.5:0)).toFixed(2),
+            hum:+(60+5*Math.sin(t/20)+Math.random()).toFixed(1),
             finger:true,max:true,mlx:true});
   },1000);
 };

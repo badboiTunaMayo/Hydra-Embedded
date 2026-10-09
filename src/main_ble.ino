@@ -6,11 +6,13 @@
  * การต่อสาย
  *   MAX30102 : GND-GND, VIN-3V3, SDA-IO21, SCL-IO22
  *   GY-906   : GND-GND, VIN-3V3, SDA-IO21, SCL-IO22
+ *   AHT20    : GND-GND, VCC-3V3, SDA-IO21, SCL-IO22
  *   LED(WS2812): VDD-5V, VSS-GND, DIN-IO5
  *
  * ไลบรารีที่ต้องติดตั้ง (Library Manager)
  *   - SparkFun MAX3010x Pulse and Proximity Sensor Library
  *   - Adafruit MLX90614 Library
+ *   - Adafruit AHTX0 (AHT20)
  *   - Adafruit NeoPixel
  *   (BLE มากับ ESP32 core แบบ Arduino-ESP32 2.x / 3.x ไม่ต้องติดตั้งเพิ่ม)
  *   เลือกบอร์ด: ESP32 Dev Module (ESP32 / S3 / C3 ที่มี BLE ใช้ได้หมด)
@@ -53,6 +55,7 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include <Adafruit_MLX90614.h>
+#include <Adafruit_AHTX0.h>
 #include <Adafruit_NeoPixel.h>
 
 #if !defined(CONFIG_BT_ENABLED)
@@ -106,11 +109,12 @@
 
 MAX30105 particleSensor;
 Adafruit_MLX90614 mlx;
+Adafruit_AHTX0 aht;
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // ---------- สถานะ ----------
-bool maxOk = false, mlxOk = false;
-unsigned long lastMaxTry = 0, lastMlxTry = 0;
+bool maxOk = false, mlxOk = false, ahtOk = false;
+unsigned long lastMaxTry = 0, lastMlxTry = 0, lastAhtTry = 0;
 
 // heart rate
 const byte RATE_SIZE = 4;
@@ -135,6 +139,7 @@ int spo2Val = 0;                // 0 = ยังไม่มีค่าที�
 
 // temperature
 float objTemp = NAN, ambTemp = NAN;
+float humidity = NAN;                   // ความชื้นสัมพัทธ์ % จาก AHT20
 
 // LED
 bool ledEnabled = true;
@@ -244,6 +249,10 @@ void initMlx() {
   mlxOk = mlx.begin();   // address 0x5A
 }
 
+void initAht() {
+  ahtOk = aht.begin();   // address 0x38
+}
+
 // ---------- LED ----------
 void showColor(uint8_t r, uint8_t g, uint8_t b) {
   uint32_t c = strip.Color(r, g, b);
@@ -315,7 +324,7 @@ void updateLed() {
 // ---------- ส่งข้อมูล ----------
 void sendStatus() {
   char buf[400];
-  char hrS[12], spS[12], tS[12], aS[12];
+  char hrS[12], spS[12], tS[12], aS[12], hS[12];
   computeAlerts();                        // ให้ค่าที่ส่งตรงกับสถานะล่าสุด
   if (fingerOn && beatAvg > 0) snprintf(hrS, sizeof(hrS), "%d", beatAvg);
   else snprintf(hrS, sizeof(hrS), "null");
@@ -325,16 +334,18 @@ void sendStatus() {
   else snprintf(tS, sizeof(tS), "null");
   if (mlxOk && !isnan(ambTemp)) snprintf(aS, sizeof(aS), "%.2f", ambTemp);
   else snprintf(aS, sizeof(aS), "null");
+  if (ahtOk && !isnan(humidity)) snprintf(hS, sizeof(hS), "%.1f", humidity);
+  else snprintf(hS, sizeof(hS), "null");
 
   snprintf(buf, sizeof(buf),
-           "{\"ts\":%lu,\"hr\":%s,\"spo2\":%s,\"temp\":%s,\"ambient\":%s,\"finger\":%s,"
-           "\"ir\":%ld,\"led\":%s,\"bright\":%u,\"max\":%s,\"mlx\":%s,"
+           "{\"ts\":%lu,\"hr\":%s,\"spo2\":%s,\"temp\":%s,\"ambient\":%s,\"hum\":%s,\"finger\":%s,"
+           "\"ir\":%ld,\"led\":%s,\"bright\":%u,\"max\":%s,\"mlx\":%s,\"aht\":%s,"
            "\"heat\":%d,\"heatScore\":%d}",
-           millis(), hrS, spS, tS, aS,
+           millis(), hrS, spS, tS, aS, hS,
            fingerOn ? "true" : "false",
            lastIr,
            ledEnabled ? "true" : "false", ledBrightness,
-           maxOk ? "true" : "false", mlxOk ? "true" : "false",
+           maxOk ? "true" : "false", mlxOk ? "true" : "false", ahtOk ? "true" : "false",
            heatLevel, heatScore);
 
   Serial.println(buf);                    // USB debug เสมอ
@@ -537,6 +548,12 @@ void readHeart() {
 
 // ---------- อ่านอุณหภูมิ (ทุก 1 วินาที) ----------
 void readTemp() {
+  if (ahtOk) {
+    sensors_event_t h, t;
+    if (aht.getEvent(&h, &t) && !isnan(h.relative_humidity)
+        && h.relative_humidity >= 0.0f && h.relative_humidity <= 100.0f) humidity = h.relative_humidity;
+    else humidity = NAN;
+  }
   if (!mlxOk) return;
   float o = mlx.readObjectTempC();
   float a = mlx.readAmbientTempC();
@@ -558,6 +575,7 @@ void setup() {
 
   initMax();
   initMlx();
+  initAht();
   Wire.setClock(100000);                  // MLX90614 (SMBus) ทำงานได้ไม่เกิน ~100 kHz
 
   initBle();                              // เปิด BLE + เริ่มโฆษณา
@@ -573,6 +591,7 @@ void loop() {
   // ลองต่อเซนเซอร์ใหม่เป็นระยะถ้ายังไม่พบ
   if (!maxOk && now - lastMaxTry > SENSOR_RETRY_MS) { lastMaxTry = now; initMax(); }
   if (!mlxOk && now - lastMlxTry > SENSOR_RETRY_MS) { lastMlxTry = now; initMlx(); }
+  if (!ahtOk && now - lastAhtTry > SENSOR_RETRY_MS) { lastAhtTry = now; initAht(); }
 
   readHeart();                            // เรียกถี่ ๆ เพื่อจับจังหวะ
   updateLed();
