@@ -46,9 +46,9 @@
  */
 
 #include <Wire.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
+#include <BLEDevice.h> //ใช้เริ่มต้น BLE และควบคุมอุปกรณ์ BLE
+#include <BLEServer.h> //ใช้สร้าง ESP32 ให้เป็น BLE Server
+#include <BLEUtils.h> 
 #if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
 #include <BLE2902.h>              // Arduino-ESP32 2.x ต้องเพิ่ม descriptor เอง (3.x เพิ่มให้อัตโนมัติ)
 #endif
@@ -67,12 +67,12 @@
 #define SDA_PIN          21
 #define SCL_PIN          22
 #define LED_PIN          5
-#define LED_COUNT        8          // จำนวนดวง LED บนโมดูล (แก้ให้ตรงกับของจริง)
-#define SEND_INTERVAL_MS 1000
+#define LED_COUNT        1       
+#define SEND_INTERVAL_MS 1000       // 1000ms --> 1s
 #define FINGER_IR_ON     70000      // IR สูงกว่านี้ = มีนิ้ววาง (ต้องแตะจริง ไม่ใช่แค่ลอยใกล้ ๆ)
 #define FINGER_IR_OFF    50000      // IR ต่ำกว่านี้ = นิ้วออก (ต่ำกว่าค่า ON เพื่อกันสถานะกระพริบ)
 #define TEMP_OFFSET_C    0.0f       // ชดเชยอุณหภูมิ (ถ้าต้องการสอบเทียบ)
-#define SENSOR_RETRY_MS  5000
+#define SENSOR_RETRY_MS  5000       // 5000ms --> 5s
 
 // BLE
 #define NUS_SERVICE_UUID "6E400001-B5A5-F393-E0A9-E50E24DCCA9E"
@@ -85,11 +85,11 @@
 // ตัวตรวจจับชีพจร
 #define HR_SAMPLE_MS     10         // 1 ตัวอย่าง = 10 ms (400 sps / เฉลี่ย 4 = 100 sps) ถ้าแก้ setup() ต้องแก้ตรงนี้ด้วย
 #define HR_DC_ALPHA      0.02f      // ตัวกรอง DC (ตัดฐานสัญญาณ)
-#define HR_LP_ALPHA      0.25f      // ตัวกรองความถี่ต่ำ ลดสัญญาณรบกวน
+#define HR_LP_ALPHA      0.25f      // ตัวกรองความถี่ต่ำ เพื่อลดการแกว่งหรือสัญญาณรบกวนที่รวดเร็วเกินไป
 #define HR_ENV_DECAY     0.995f     // ซองสัญญาณลดลงต่อตัวอย่าง (~60% ต่อวินาที)
-#define HR_MIN_AMP       20.0f      // แอมพลิจูดต่ำสุดที่นับเป็นจังหวะ (เพิ่มถ้ามีจังหวะปลอมเยอะ)
+#define HR_MIN_AMP       20.0f      // แอมพลิจูดต่ำสุดที่นับเป็นจังหวะ (เพิ่มถ้ามีจังหวะปลอมเยอะ) ป้องกันการนับสัญญาณเล็ก ๆ ที่เกิดจากสัญญาณรบกวนเป็นชีพจร
 #define HR_REFRACT_MS    300        // ห้ามนับจังหวะถี่กว่านี้ (= 200 bpm)
-#define HR_TIMEOUT_MS    4000       // ไม่มีจังหวะนานกว่านี้ = ล้างค่า HR เป็น null
+#define HR_TIMEOUT_MS    4000       // ไม่มีจังหวะนานกว่านี้ = ล้างค่า HR เป็น null ป้องกันการแสดงค่า BPM เก่าค้างไว้เมื่อเซนเซอร์ไม่พบชีพจร
 
 // SpO2
 #define SPO2_WINDOW      300        // ตัวอย่างต่อหนึ่งรอบคำนวณ (~3 วินาทีที่ 100 sps)
@@ -113,14 +113,14 @@ Adafruit_AHTX0 aht;
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // ---------- สถานะ ----------
-bool maxOk = false, mlxOk = false, ahtOk = false;
-unsigned long lastMaxTry = 0, lastMlxTry = 0, lastAhtTry = 0;
+bool maxOk = false, mlxOk = false, ahtOk = false; //เก็บสถานะการทำงานของเซนเซอร์
+unsigned long lastMaxTry = 0, lastMlxTry = 0, lastAhtTry = 0; //เก็บเวลาครั้งล่าสุด
 
 // heart rate
 const byte RATE_SIZE = 4;
-byte rates[RATE_SIZE];
-byte rateSpot = 0;
-unsigned long lastBeat = 0;
+byte rates[RATE_SIZE];            //ค่าอัตราการเต้นของหัวใจ
+byte rateSpot = 0;                //ตำแหน่งของ rates
+unsigned long lastBeat = 0;       //เก็บเวลาที่ตรวจชีพจรครั้งก่อน คำนวณระยะห่างระหว่างจังหวะหัวใจ
 unsigned long lastBeatWall = 0;   // millis() ตอนได้จังหวะที่ใช้ได้ล่าสุด (ไว้ตรวจ timeout)
 float beatsPerMinute = 0;
 int beatAvg = 0;
@@ -159,26 +159,28 @@ unsigned long lastSend = 0;
 String cmdBufUsb, cmdBufBle;
 
 // ---------- BLE ----------
-BLEServer* bleServer = nullptr;
-BLECharacteristic* txChar = nullptr;
-volatile bool bleConnected = false;
+BLEServer* bleServer = nullptr;       //ฝั่ง server
+BLECharacteristic* txChar = nullptr;  //ช่องทางส่งข้อมูลไปยังมือถือ/คอม
+volatile bool bleConnected = false;   //สถานะการเชื่อมต่อ
 volatile bool bleNeedAdv = false;
 
-String txQueue;                         // แตะเฉพาะใน loop() เท่านั้น
-unsigned long lastTx = 0;
+String txQueue;                         // แตะเฉพาะใน loop() เท่านั้น เก็บข้อความที่ ESP32 เตรียมส่งออกผ่าน BLE
+unsigned long lastTx = 0;               //เก็บเวลาที่ส่งข้อมูลล่าสุด
 
 // คิววงกลมรับคำสั่งจาก BLE task -> loop() (ผู้เขียน 1 คน ผู้อ่าน 1 คน ไม่ต้องล็อก)
 char rxRing[128];
 volatile uint8_t rxHead = 0, rxTail = 0;
 
+//ตรวจสอบการเชื่อมต่อ BLE
 class ServerCb : public BLEServerCallbacks {
   void onConnect(BLEServer*) override { bleConnected = true; }
-  void onDisconnect(BLEServer*) override { bleConnected = false; bleNeedAdv = true; }
+  void onDisconnect(BLEServer*) override { bleConnected = false; bleNeedAdv = true; } //ส่งสัญญาณให้โค้ดส่วนอื่นเริ่ม BLE Advertising ใหม่ เพื่อรอให้โทรศัพท์เชื่อมต่ออีกครั้ง
 };
 
+//รับคำสั่งจากโทรศัพท์
 class RxCb : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* c) override {
-    String v = c->getValue().c_str();   // 2.x คืน std::string, 3.x คืน String ใช้ c_str() ได้ทั้งคู่
+    String v = c->getValue().c_str();   //ดึงค่าข้อมูลที่โทรศัพท์ส่งมา 
     for (size_t i = 0; i < v.length(); i++) {
       uint8_t n = (rxHead + 1) & 127;
       if (n == rxTail) break;           // คิวเต็ม ทิ้งส่วนที่เหลือ
@@ -188,18 +190,20 @@ class RxCb : public BLECharacteristicCallbacks {
   }
 };
 
+//ฟังก์ชันเริ่มต้นระบบ Bluetooth Low Energy (BLE)
 void initBle() {
   BLEDevice::init(DEVICE_NAME);
   bleServer = BLEDevice::createServer();
   bleServer->setCallbacks(new ServerCb());
 
-  BLEService* svc = bleServer->createService(NUS_SERVICE_UUID);
+  BLEService* svc = bleServer->createService(NUS_SERVICE_UUID); //สร้าง BLE service
 
   txChar = svc->createCharacteristic(NUS_TX_UUID, BLECharacteristic::PROPERTY_NOTIFY);
 #if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
   txChar->addDescriptor(new BLE2902());
 #endif
 
+  //สร้างช่องทางรับข้อมูลจากโทรศัพท์
   BLECharacteristic* rxChar = svc->createCharacteristic(
       NUS_RX_UUID, BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
   rxChar->setCallbacks(new RxCb());
@@ -220,6 +224,7 @@ void bleSend(const char* s) {
   txQueue += '\n';
 }
 
+//ทยอยส่งข้อมูลจากคิว txQueue ไปยัง Dashboard ผ่าน BLE ทีละส่วน
 void bleFlush() {
   if (!bleConnected) { if (txQueue.length()) txQueue = ""; return; }
   if (!txQueue.length() || txChar == nullptr) return;
@@ -233,6 +238,7 @@ void bleFlush() {
 }
 
 // ---------- Sensor init (ไม่บล็อก ถ้าหาไม่เจอจะลองใหม่เป็นระยะ) ----------
+//เริ่มต้นเซนเซอร์ MAX30102 เพื่อวัดอัตราการเต้นของหัวใจ (Heart Rate) และค่าออกซิเจนในเลือด (SpO₂)
 void initMax() {
   if (particleSensor.begin(Wire, I2C_SPEED_STANDARD)) {   // 100 kHz ให้ GY-906 ใช้บัสเดียวกันได้
     // ledBrightness, sampleAverage, ledMode(2=Red+IR), sampleRate, pulseWidth, adcRange
@@ -321,7 +327,7 @@ void updateLed() {
   }
 }
 
-// ---------- ส่งข้อมูล ----------
+// ส่งข้อมูล รวมค่าจากเซนเซอร์และสถานะต่าง ๆ เป็นข้อมูล JSON แล้วส่งออกทาง Serial และ BLE
 void sendStatus() {
   char buf[400];
   char hrS[12], spS[12], tS[12], aS[12], hS[12];
@@ -352,6 +358,7 @@ void sendStatus() {
   bleSend(buf);                           // BLE เฉพาะเมื่อมีคนต่ออยู่
 }
 
+//ตอบจาก ESP32 ไปยังผู้สั่งงาน
 void reply(const char* msg) {
   char buf[120];
   snprintf(buf, sizeof(buf), "{\"msg\":\"%s\"}", msg);
@@ -365,6 +372,7 @@ void handleCommand(String c) {
   c.toUpperCase();
   if (c.length() == 0) return;
 
+  //เปิด/ปิด/ปรับความสว่าง LED ((แต่ไม่ได้ใช้แล้ว))
   if (c == "LED ON")        { ledEnabled = true;  reply("led on"); }
   else if (c == "LED OFF")  { ledEnabled = false; reply("led off"); }
   else if (c.startsWith("BRIGHT")) {
@@ -550,13 +558,13 @@ void readHeart() {
 void readTemp() {
   if (ahtOk) {
     sensors_event_t h, t;
-    if (aht.getEvent(&h, &t) && !isnan(h.relative_humidity)
-        && h.relative_humidity >= 0.0f && h.relative_humidity <= 100.0f) humidity = h.relative_humidity;
+    if (aht.getEvent(&h, &t) && !isnan(h.relative_humidity) //อ่านข้อมูลจาก AHT20 และคืนค่าสถานะการอ่านตามไลบรารี
+        && h.relative_humidity >= 0.0f && h.relative_humidity <= 100.0f) humidity = h.relative_humidity; //ค่าความชื้นต้องไม่น้อยกว่า 0% และต้องไม่เกิน 100%
     else humidity = NAN;
   }
   if (!mlxOk) return;
-  float o = mlx.readObjectTempC();
-  float a = mlx.readAmbientTempC();
+  float o = mlx.readObjectTempC();    //อ่านอุณหภูมิของวัตถุหรือพื้นผิวที่เซนเซอร์ตรวจวัดได้ แล้วเก็บใน o
+  float a = mlx.readAmbientTempC();   //อ่านอุณหภูมิแวดล้อม แล้วเก็บใน a
   // ทิ้งค่าที่เป็นไปไม่ได้ (เช่น 1037.55 = อ่าน I2C ล้มเหลว)
   bool oOk = !isnan(o) && o > -40.0f && o < 125.0f;
   bool aOk = !isnan(a) && a > -40.0f && a < 125.0f;
@@ -565,20 +573,26 @@ void readTemp() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  Wire.begin(SDA_PIN, SCL_PIN);
+  //1
+  Serial.begin(115200);                   //ความเร็วในการรับส่งข้อมูล (Baud Rate)
+  Wire.begin(SDA_PIN, SCL_PIN);           //ตั้งค่าการสื่อสารI2C
   Wire.setTimeOut(50);                    // กัน I2C ค้างนาน (หน่วย ms)
 
+  //2 
   strip.begin();
   strip.setBrightness(ledBrightness);
   strip.show();
 
-  initMax();
+  //เริ่มต้นการทำงานของsensor
+  initMax();  //เรียกใช้ฟังก์ชั่นต่าง ๆ
   initMlx();
   initAht();
+  //3
   Wire.setClock(100000);                  // MLX90614 (SMBus) ทำงานได้ไม่เกิน ~100 kHz
 
-  initBle();                              // เปิด BLE + เริ่มโฆษณา
+  initBle();                              // เปิด BLE การสื่อสาร
+
+  //4
   cmdBufUsb.reserve(48);
   cmdBufBle.reserve(48);
   txQueue.reserve(BLE_TX_MAX + 16);
@@ -588,12 +602,12 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // ลองต่อเซนเซอร์ใหม่เป็นระยะถ้ายังไม่พบ
+  // ตรวจสอบสถานะเซนเซอร์ ลองต่อเซนเซอร์ใหม่เป็นระยะ 5วิ ถ้ายังไม่พบ
   if (!maxOk && now - lastMaxTry > SENSOR_RETRY_MS) { lastMaxTry = now; initMax(); }
   if (!mlxOk && now - lastMlxTry > SENSOR_RETRY_MS) { lastMlxTry = now; initMlx(); }
   if (!ahtOk && now - lastAhtTry > SENSOR_RETRY_MS) { lastAhtTry = now; initAht(); }
 
-  readHeart();                            // เรียกถี่ ๆ เพื่อจับจังหวะ
+  readHeart();                            // เรียกถี่ ๆ เพื่อจับจังหวะ 
   updateLed();
 
   // รับคำสั่ง จาก BLE และจาก USB
